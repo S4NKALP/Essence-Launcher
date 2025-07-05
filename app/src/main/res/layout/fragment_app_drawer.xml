@@ -7,20 +7,26 @@
     android:padding="16dp"
     android:fitsSystemWindows="true">
 
-    <!-- Apps List (left center) - shows recent apps or search results -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recentAppsRecyclerView"
-        android:layout_width="wrap_content"
+    <!-- Main content area that centers apps when keyboard is closed -->
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
-        android:maxHeight="720dp"
-        android:scrollbars="none"
-        android:nestedScrollingEnabled="true"
-        android:overScrollMode="ifContentScrolls" />
+        android:layout_weight="1">
+
+        <!-- Apps List (left center) - shows recent apps or search results -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recentAppsRecyclerView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:maxHeight="720dp"
+            android:scrollbars="none"
+            android:nestedScrollingEnabled="true"
+            android:overScrollMode="ifContentScrolls" />
+
+    </FrameLayout>
 
     <!-- Search Options Icons (above search bar, right side) -->
     <LinearLayout
@@ -65,11 +71,12 @@
 
     </LinearLayout>
 
-    <!-- Search Bar (will be pushed up by keyboard) -->
+    <!-- Search Bar (responsive to keyboard) -->
     <LinearLayout
         android:id="@+id/searchBarContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:orientation="horizontal"
         android:layout_marginBottom="8dp"
         android:layout_marginStart="8dp"
