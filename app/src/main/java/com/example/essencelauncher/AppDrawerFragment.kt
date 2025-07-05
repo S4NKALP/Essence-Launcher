@@ -80,11 +80,6 @@ class AppDrawerFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Ensure the activity responds to keyboard
-        requireActivity().window.setSoftInputMode(
-            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-        )
-
         // Automatically show keyboard and focus on search
         showKeyboardAndFocus()
     }
@@ -349,12 +344,6 @@ class AppDrawerFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         hideKeyboard()
-
-        // Restore original window flags
-        requireActivity().window.setFlags(
-            android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-        )
     }
 
     private fun setupGestureDetector(view: View) {

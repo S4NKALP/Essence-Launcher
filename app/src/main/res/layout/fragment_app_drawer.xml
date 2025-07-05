@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
+    android:orientation="vertical"
     android:padding="16dp"
-    android:fitsSystemWindows="false">
+    android:fitsSystemWindows="true">
 
     <!-- Apps List (left center) - shows recent apps or search results -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recentAppsRecyclerView"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_alignParentStart="true"
-        android:layout_above="@+id/searchIconsContainer"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
         android:maxHeight="720dp"
         android:scrollbars="none"
@@ -25,11 +25,10 @@
     <!-- Search Options Icons (above search bar, right side) -->
     <LinearLayout
         android:id="@+id/searchIconsContainer"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/searchBarContainer"
-        android:layout_alignParentEnd="true"
         android:orientation="horizontal"
+        android:gravity="end"
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="16dp">
 
@@ -66,17 +65,15 @@
 
     </LinearLayout>
 
-    <!-- Search Bar (responsive to keyboard) -->
+    <!-- Search Bar (will be pushed up by keyboard) -->
     <LinearLayout
         android:id="@+id/searchBarContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
         android:orientation="horizontal"
         android:layout_marginBottom="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-
         android:padding="12dp"
         android:elevation="4dp">
 
@@ -103,6 +100,4 @@
 
     </LinearLayout>
 
-
-
-</RelativeLayout>
+</LinearLayout>

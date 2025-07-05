@@ -44,10 +44,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-        )
+        // Remove fullscreen flags to allow proper keyboard handling
         setContentView(R.layout.activity_main)
 
         viewPager = findViewById(R.id.viewPager)
@@ -173,6 +170,9 @@ class MainActivity : AppCompatActivity() {
     fun openAppDrawer() {
         Log.d("MainActivity", "openAppDrawer called")
         try {
+            // Set proper soft input mode for keyboard handling
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
             // Hide ViewPager and show app drawer
             viewPager.visibility = View.GONE
             appDrawerContainer.visibility = View.VISIBLE
@@ -189,6 +189,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun closeAppDrawer() {
+        // Reset soft input mode to default
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_UNSPECIFIED)
+
         // Show ViewPager and hide app drawer
         viewPager.visibility = View.VISIBLE
         appDrawerContainer.visibility = View.GONE
