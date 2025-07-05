@@ -22,15 +22,16 @@ package com.example.essencelauncher
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
+
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
@@ -41,7 +42,8 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import java.io.IOException
+import kotlin.math.abs
+
 
 class AppDrawerFragment : Fragment() {
 
@@ -58,6 +60,7 @@ class AppDrawerFragment : Fragment() {
     private var recentApps = mutableListOf<AppInfo>()
     private var favoriteApps = mutableSetOf<String>()
     private var isSearchMode = false
+    private lateinit var gestureDetector: GestureDetector
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -68,6 +71,7 @@ class AppDrawerFragment : Fragment() {
         initViews(view)
         setupRecyclerView()
         setupSearchFunctionality()
+        setupGestureDetector(view)
         loadApps()
 
         return view
@@ -75,6 +79,11 @@ class AppDrawerFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Ensure the activity responds to keyboard
+        requireActivity().window.setSoftInputMode(
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        )
 
         // Automatically show keyboard and focus on search
         showKeyboardAndFocus()
@@ -88,7 +97,7 @@ class AppDrawerFragment : Fragment() {
         googleIcon = view.findViewById(R.id.googleIcon)
         dashboardIcon = view.findViewById(R.id.dashboardIcon)
 
-        loadIconsFromAssets()
+        loadIconsFromDrawables()
     }
 
     private fun setupRecyclerView() {
@@ -315,40 +324,12 @@ class AppDrawerFragment : Fragment() {
         prefs.edit().putString("favorite_apps", favoritesString).apply()
     }
 
-    private fun loadIconsFromAssets() {
-        try {
-            // Load Play Store icon
-            val playStoreInputStream = requireContext().assets.open("apps/playstore.png")
-            val playStoreBitmap = BitmapFactory.decodeStream(playStoreInputStream)
-            playStoreIcon.setImageDrawable(BitmapDrawable(resources, playStoreBitmap))
-            playStoreInputStream.close()
-
-            // Load Web icon
-            val webInputStream = requireContext().assets.open("apps/web.png")
-            val webBitmap = BitmapFactory.decodeStream(webInputStream)
-            webIcon.setImageDrawable(BitmapDrawable(resources, webBitmap))
-            webInputStream.close()
-
-            // Load Google icon
-            val googleInputStream = requireContext().assets.open("apps/google.png")
-            val googleBitmap = BitmapFactory.decodeStream(googleInputStream)
-            googleIcon.setImageDrawable(BitmapDrawable(resources, googleBitmap))
-            googleInputStream.close()
-
-            // Load Dashboard icon
-            val dashboardInputStream = requireContext().assets.open("apps/dashboard.png")
-            val dashboardBitmap = BitmapFactory.decodeStream(dashboardInputStream)
-            dashboardIcon.setImageDrawable(BitmapDrawable(resources, dashboardBitmap))
-            dashboardInputStream.close()
-
-        } catch (e: IOException) {
-            e.printStackTrace()
-            // Fallback to drawable icons if assets fail to load
-            playStoreIcon.setImageResource(R.drawable.ic_play_store)
-            webIcon.setImageResource(R.drawable.ic_web)
-            googleIcon.setImageResource(R.drawable.ic_image)
-            dashboardIcon.setImageResource(R.drawable.ic_apps)
-        }
+    private fun loadIconsFromDrawables() {
+        // Load icons directly from drawable resources
+        playStoreIcon.setImageResource(R.drawable.ic_play_store)
+        webIcon.setImageResource(R.drawable.ic_web)
+        googleIcon.setImageResource(R.drawable.ic_google)
+        dashboardIcon.setImageResource(R.drawable.ic_apps)
     }
 
     private fun showKeyboardAndFocus() {
@@ -368,5 +349,50 @@ class AppDrawerFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         hideKeyboard()
+
+        // Restore original window flags
+        requireActivity().window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        )
+    }
+
+    private fun setupGestureDetector(view: View) {
+        gestureDetector = GestureDetector(requireContext(), object : GestureDetector.SimpleOnGestureListener() {
+            private val SWIPE_THRESHOLD = 100
+            private val SWIPE_VELOCITY_THRESHOLD = 100
+
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+
+                val diffY = e2.y - e1.y
+                val diffX = e2.x - e1.x
+
+                // Only handle down swipe to close app drawer
+                if (abs(diffY) > abs(diffX)) {
+                    if (abs(diffY) > SWIPE_THRESHOLD && abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
+                        if (diffY > 0) {
+                            // Down swipe - close app drawer
+                            closeAppDrawer()
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
+        })
+
+        view.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+        }
+    }
+
+    private fun closeAppDrawer() {
+        (activity as? MainActivity)?.closeAppDrawer()
     }
 }

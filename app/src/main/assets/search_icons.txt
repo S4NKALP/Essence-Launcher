@@ -4,5 +4,5 @@
 
 playstore: ic_play_store
 web: ic_web
-google_images: ic_image
+google_images: ic_google
 all_apps: ic_apps

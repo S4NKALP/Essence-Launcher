@@ -80,7 +80,6 @@ class HomeFragment : Fragment() {
         setupTimeUpdate()
         setupTimeClickListener()
         setupBatteryClickListener()
-        setupAppDrawerGesture(view)
         setupAppDrawerTrigger()
 
         return view
@@ -107,39 +106,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun setupAppDrawerGesture(view: View) {
-        var startY = 0f
-        var startTime = 0L
 
-        view.setOnTouchListener { _, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    startY = event.y
-                    startTime = System.currentTimeMillis()
-                    false // Don't consume
-                }
-                MotionEvent.ACTION_UP -> {
-                    val endY = event.y
-                    val endTime = System.currentTimeMillis()
-                    val diffY = startY - endY
-                    val diffTime = endTime - startTime
-                    val velocity = diffY / diffTime
-
-                    // Check for swipe up gesture from bottom area
-                    val screenHeight = view.height
-                    val startFromBottom = startY > screenHeight * 0.7f
-
-                    if (startFromBottom && diffY > 200 && velocity > 0.5f && diffTime < 500) {
-                        openAppDrawer()
-                        true // Consume this event
-                    } else {
-                        false
-                    }
-                }
-                else -> false
-            }
-        }
-    }
 
     private fun setupAppDrawerTrigger() {
         appDrawerTrigger.setOnClickListener { view ->
