@@ -158,10 +158,8 @@ class AppDrawerFragment : Fragment() {
         }
 
         dashboardIcon.setOnClickListener {
-            val query = searchEditText.text.toString().trim()
-            if (query.isNotEmpty()) {
-                enterSearchMode(query)
-            }
+            // Show all applications regardless of search query
+            showAllApps()
         }
     }
 
@@ -218,6 +216,23 @@ class AppDrawerFragment : Fragment() {
             isSearchMode = false
             recentAppsRecyclerView.adapter = recentAppAdapter
         }
+    }
+
+    private fun showAllApps() {
+        // Clear search text and enter search mode to show all apps
+        searchEditText.setText("")
+
+        if (!isSearchMode) {
+            isSearchMode = true
+            recentAppsRecyclerView.adapter = searchAppAdapter
+        }
+
+        // Show all apps sorted alphabetically with favorite status
+        val allAppsWithFavorites = allApps.map { app ->
+            app.copy(isFavorite = favoriteApps.contains(app.packageName))
+        }.sortedBy { it.name }
+
+        searchAppAdapter.updateApps(allAppsWithFavorites)
     }
 
     private fun toggleFavorite(app: AppInfo) {
