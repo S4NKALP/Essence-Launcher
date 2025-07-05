@@ -1,0 +1,8 @@
+# Search Icons Reference
+# This file contains references to search functionality icons
+# Icons are implemented as vector drawables in the drawable folder
+
+playstore: ic_play_store
+web: ic_web
+google_images: ic_image
+all_apps: ic_apps

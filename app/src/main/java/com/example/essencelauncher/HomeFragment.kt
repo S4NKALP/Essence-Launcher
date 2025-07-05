@@ -29,7 +29,10 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.AlarmClock
 import android.provider.Settings
+import android.util.Log
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -48,6 +51,9 @@ class HomeFragment : Fragment() {
     private lateinit var batteryContainer: LinearLayout
     private lateinit var batteryPercentageText: TextView
     private lateinit var batteryIcon: ImageView
+    private lateinit var appDrawerTrigger: LinearLayout
+    private lateinit var favoriteAppsContainer: LinearLayout
+    private lateinit var gestureDetector: GestureDetector
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var timeUpdateRunnable: Runnable
 
@@ -68,10 +74,14 @@ class HomeFragment : Fragment() {
         batteryContainer = view.findViewById(R.id.batteryContainer)
         batteryPercentageText = view.findViewById(R.id.batteryPercentageText)
         batteryIcon = view.findViewById(R.id.batteryIcon)
+        appDrawerTrigger = view.findViewById(R.id.appDrawerTrigger)
+        favoriteAppsContainer = view.findViewById(R.id.favoriteAppsContainer)
 
         setupTimeUpdate()
         setupTimeClickListener()
         setupBatteryClickListener()
+        setupAppDrawerGesture(view)
+        setupAppDrawerTrigger()
 
         return view
     }
@@ -94,6 +104,71 @@ class HomeFragment : Fragment() {
     private fun setupBatteryClickListener() {
         batteryContainer.setOnClickListener {
             openBatterySettings()
+        }
+    }
+
+    private fun setupAppDrawerGesture(view: View) {
+        var startY = 0f
+        var startTime = 0L
+
+        view.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    startY = event.y
+                    startTime = System.currentTimeMillis()
+                    false // Don't consume
+                }
+                MotionEvent.ACTION_UP -> {
+                    val endY = event.y
+                    val endTime = System.currentTimeMillis()
+                    val diffY = startY - endY
+                    val diffTime = endTime - startTime
+                    val velocity = diffY / diffTime
+
+                    // Check for swipe up gesture from bottom area
+                    val screenHeight = view.height
+                    val startFromBottom = startY > screenHeight * 0.7f
+
+                    if (startFromBottom && diffY > 200 && velocity > 0.5f && diffTime < 500) {
+                        openAppDrawer()
+                        true // Consume this event
+                    } else {
+                        false
+                    }
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun setupAppDrawerTrigger() {
+        appDrawerTrigger.setOnClickListener { view ->
+            Log.d("HomeFragment", "App drawer trigger clicked")
+            try {
+                // Prevent any system behavior
+                view.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+                openAppDrawer()
+            } catch (e: Exception) {
+                Log.e("HomeFragment", "Error opening app drawer", e)
+                Toast.makeText(context, "Error opening app drawer", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Also handle long press to prevent system behavior
+        appDrawerTrigger.setOnLongClickListener {
+            Log.d("HomeFragment", "App drawer trigger long clicked")
+            openAppDrawer()
+            true // Consume the event
+        }
+    }
+
+    private fun openAppDrawer() {
+        Log.d("HomeFragment", "Opening app drawer")
+        try {
+            (activity as? MainActivity)?.openAppDrawer()
+        } catch (e: Exception) {
+            Log.e("HomeFragment", "Error in openAppDrawer", e)
+            Toast.makeText(context, "Cannot open app drawer", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -215,6 +290,36 @@ class HomeFragment : Fragment() {
             context?.unregisterReceiver(batteryReceiver)
         } catch (e: Exception) {
             // Receiver might not be registered
+        }
+    }
+
+    fun updateFavoriteApps(favoriteApps: List<AppInfo>) {
+        favoriteAppsContainer.removeAllViews()
+
+        for (app in favoriteApps) {
+            val favoriteView = LayoutInflater.from(context)
+                .inflate(R.layout.item_favorite_app, favoriteAppsContainer, false)
+
+            val favoriteAppName = favoriteView.findViewById<TextView>(R.id.favoriteAppName)
+            favoriteAppName.text = app.name
+
+            favoriteView.setOnClickListener {
+                launchApp(app.packageName)
+            }
+
+            favoriteAppsContainer.addView(favoriteView)
+        }
+    }
+
+    private fun launchApp(packageName: String) {
+        try {
+            val intent = context?.packageManager?.getLaunchIntentForPackage(packageName)
+            intent?.let {
+                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(it)
+            }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot launch app", Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -20,7 +20,10 @@
 package com.example.essencelauncher
 
 import android.os.Bundle
+import android.util.Log
+import android.view.View
 import android.view.WindowManager
+import android.widget.FrameLayout
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -31,7 +34,8 @@ import androidx.viewpager2.widget.ViewPager2
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var viewPager : ViewPager2;
+    lateinit var viewPager : ViewPager2
+    lateinit var appDrawerContainer: FrameLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +46,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         viewPager = findViewById(R.id.viewPager)
+        appDrawerContainer = findViewById(R.id.appDrawerContainer)
+
         val fragments = listOf(LeftFragment(), HomeFragment(), RightFragment())
         viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = fragments.size
@@ -49,5 +55,41 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewPager.setCurrentItem(1, false)
+    }
+
+    fun openAppDrawer() {
+        Log.d("MainActivity", "openAppDrawer called")
+        try {
+            // Hide ViewPager and show app drawer
+            viewPager.visibility = View.GONE
+            appDrawerContainer.visibility = View.VISIBLE
+
+            val appDrawerFragment = AppDrawerFragment()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.appDrawerContainer, appDrawerFragment)
+                .addToBackStack("app_drawer")
+                .commit()
+            Log.d("MainActivity", "App drawer opened successfully")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error opening app drawer", e)
+        }
+    }
+
+    fun closeAppDrawer() {
+        // Show ViewPager and hide app drawer
+        viewPager.visibility = View.VISIBLE
+        appDrawerContainer.visibility = View.GONE
+
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack()
+        }
+    }
+
+    override fun onBackPressed() {
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            closeAppDrawer()
+        } else {
+            super.onBackPressed()
+        }
     }
 }
