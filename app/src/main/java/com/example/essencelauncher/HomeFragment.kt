@@ -53,6 +53,8 @@ class HomeFragment : Fragment() {
     private lateinit var batteryIcon: ImageView
     private lateinit var searchLabel: LinearLayout
     private lateinit var favoriteAppsContainer: LinearLayout
+    private lateinit var phoneButton: ImageView
+    private lateinit var messageButton: ImageView
     private lateinit var gestureDetector: GestureDetector
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var timeUpdateRunnable: Runnable
@@ -76,10 +78,13 @@ class HomeFragment : Fragment() {
         batteryIcon = view.findViewById(R.id.batteryIcon)
         searchLabel = view.findViewById(R.id.searchLabel)
         favoriteAppsContainer = view.findViewById(R.id.favoriteAppsContainer)
+        phoneButton = view.findViewById(R.id.phoneButton)
+        messageButton = view.findViewById(R.id.messageButton)
 
         setupTimeUpdate()
         setupTimeClickListener()
         setupBatteryClickListener()
+        setupCommunicationClickListeners()
 
         return view
     }
@@ -102,6 +107,16 @@ class HomeFragment : Fragment() {
     private fun setupBatteryClickListener() {
         batteryContainer.setOnClickListener {
             openBatterySettings()
+        }
+    }
+
+    private fun setupCommunicationClickListeners() {
+        phoneButton.setOnClickListener {
+            openPhoneApp()
+        }
+
+        messageButton.setOnClickListener {
+            openMessageApp()
         }
     }
 
@@ -159,6 +174,66 @@ class HomeFragment : Fragment() {
                 startActivity(intent)
             } catch (e2: Exception) {
                 Toast.makeText(context, "Cannot open battery settings", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun openPhoneApp() {
+        try {
+            // Try to open the default phone app using the dialer intent
+            val intent = Intent(Intent.ACTION_DIAL)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                // Fallback: try to open any phone app
+                val intent = Intent(Intent.ACTION_MAIN)
+                intent.addCategory(Intent.CATEGORY_LAUNCHER)
+                intent.setClassName("com.google.android.dialer", "com.android.dialer.DialtactsActivity")
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(intent)
+            } catch (e2: Exception) {
+                try {
+                    // Another fallback: try Samsung phone app
+                    val intent = Intent(Intent.ACTION_MAIN)
+                    intent.addCategory(Intent.CATEGORY_LAUNCHER)
+                    intent.setClassName("com.samsung.android.dialer", "com.samsung.android.dialer.DialtactsActivity")
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                } catch (e3: Exception) {
+                    Toast.makeText(context, "No phone app found", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun openMessageApp() {
+        try {
+            // Try to open the default messaging app
+            val intent = Intent(Intent.ACTION_MAIN)
+            intent.addCategory(Intent.CATEGORY_DEFAULT)
+            intent.type = "vnd.android-dir/mms-sms"
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                // Fallback: try Google Messages
+                val intent = Intent(Intent.ACTION_MAIN)
+                intent.addCategory(Intent.CATEGORY_LAUNCHER)
+                intent.setClassName("com.google.android.apps.messaging", "com.google.android.apps.messaging.ui.ConversationListActivity")
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(intent)
+            } catch (e2: Exception) {
+                try {
+                    // Another fallback: try Samsung Messages
+                    val intent = Intent(Intent.ACTION_MAIN)
+                    intent.addCategory(Intent.CATEGORY_LAUNCHER)
+                    intent.setClassName("com.samsung.android.messaging", "com.android.mms.ui.ConversationList")
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                } catch (e3: Exception) {
+                    Toast.makeText(context, "No messaging app found", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
