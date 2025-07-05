@@ -51,7 +51,7 @@ class HomeFragment : Fragment() {
     private lateinit var batteryContainer: LinearLayout
     private lateinit var batteryPercentageText: TextView
     private lateinit var batteryIcon: ImageView
-    private lateinit var appDrawerTrigger: LinearLayout
+    private lateinit var searchLabel: LinearLayout
     private lateinit var favoriteAppsContainer: LinearLayout
     private lateinit var gestureDetector: GestureDetector
     private val handler = Handler(Looper.getMainLooper())
@@ -74,13 +74,12 @@ class HomeFragment : Fragment() {
         batteryContainer = view.findViewById(R.id.batteryContainer)
         batteryPercentageText = view.findViewById(R.id.batteryPercentageText)
         batteryIcon = view.findViewById(R.id.batteryIcon)
-        appDrawerTrigger = view.findViewById(R.id.appDrawerTrigger)
+        searchLabel = view.findViewById(R.id.searchLabel)
         favoriteAppsContainer = view.findViewById(R.id.favoriteAppsContainer)
 
         setupTimeUpdate()
         setupTimeClickListener()
         setupBatteryClickListener()
-        setupAppDrawerTrigger()
 
         return view
     }
@@ -108,26 +107,7 @@ class HomeFragment : Fragment() {
 
 
 
-    private fun setupAppDrawerTrigger() {
-        appDrawerTrigger.setOnClickListener { view ->
-            Log.d("HomeFragment", "App drawer trigger clicked")
-            try {
-                // Prevent any system behavior
-                view.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
-                openAppDrawer()
-            } catch (e: Exception) {
-                Log.e("HomeFragment", "Error opening app drawer", e)
-                Toast.makeText(context, "Error opening app drawer", Toast.LENGTH_SHORT).show()
-            }
-        }
 
-        // Also handle long press to prevent system behavior
-        appDrawerTrigger.setOnLongClickListener {
-            Log.d("HomeFragment", "App drawer trigger long clicked")
-            openAppDrawer()
-            true // Consume the event
-        }
-    }
 
     private fun openAppDrawer() {
         Log.d("HomeFragment", "Opening app drawer")

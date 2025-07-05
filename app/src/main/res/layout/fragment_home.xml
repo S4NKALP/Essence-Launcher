@@ -63,9 +63,9 @@
 
     </LinearLayout>
 
-    <!-- App Drawer Trigger -->
+    <!-- Search Label (non-clickable visual indicator) -->
     <LinearLayout
-        android:id="@+id/appDrawerTrigger"
+        android:id="@+id/searchLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
@@ -73,13 +73,17 @@
         android:layout_marginBottom="32dp"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:alpha="0.6"
+        android:clickable="false"
+        android:focusable="false">
 
         <ImageView
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:src="@drawable/ic_arrow_up"
-            android:contentDescription="Open app drawer" />
+            android:contentDescription="Swipe up to search"
+            android:alpha="0.6" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -87,7 +91,8 @@
             android:text="Search"
             android:textSize="12sp"
             android:textColor="?android:attr/textColorSecondary"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="4dp"
+            android:alpha="0.6" />
 
     </LinearLayout>
 
