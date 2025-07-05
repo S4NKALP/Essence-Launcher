@@ -48,7 +48,7 @@
             android:id="@+id/batteryIcon"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_battery_horizontal_full"
+            android:src="@drawable/ic_battery_full"
             android:contentDescription="Battery level" />
 
         <TextView

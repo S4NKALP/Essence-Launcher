@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Use the same background as the app pages -->
+    <solid android:color="?android:attr/colorBackground" />
+
+    <!-- Material Design 3 rounded corners -->
+    <corners android:radius="28dp" />
+
+</shape>

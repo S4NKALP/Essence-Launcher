@@ -19,10 +19,11 @@
 
 package com.example.essencelauncher
 
+import android.app.AlertDialog
+import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -97,11 +98,15 @@ class AppDrawerFragment : Fragment() {
 
     private fun setupRecyclerView() {
         // Setup recent apps adapter (no star buttons)
-        recentAppAdapter = RecentAppAdapter(requireContext(), recentApps)
+        recentAppAdapter = RecentAppAdapter(requireContext(), recentApps) { app ->
+            showAppOptionsDialog(app)
+        }
 
         // Setup search apps adapter (with star buttons)
-        searchAppAdapter = AppAdapter(requireContext(), emptyList()) { app ->
+        searchAppAdapter = AppAdapter(requireContext(), emptyList(), { app ->
             toggleFavorite(app)
+        }) { app ->
+            showAppOptionsDialog(app)
         }
 
         recentAppsRecyclerView.layoutManager = LinearLayoutManager(context)
@@ -138,23 +143,17 @@ class AppDrawerFragment : Fragment() {
 
         playStoreIcon.setOnClickListener {
             val query = searchEditText.text.toString().trim()
-            if (query.isNotEmpty()) {
-                searchInPlayStore(query)
-            }
+            searchInPlayStore(query)
         }
 
         webIcon.setOnClickListener {
             val query = searchEditText.text.toString().trim()
-            if (query.isNotEmpty()) {
-                searchInWeb(query)
-            }
+            searchInWeb(query)
         }
 
         googleIcon.setOnClickListener {
             val query = searchEditText.text.toString().trim()
-            if (query.isNotEmpty()) {
-                searchInGoogleImages(query)
-            }
+            searchInGoogleImages(query)
         }
 
         dashboardIcon.setOnClickListener {
@@ -293,13 +292,23 @@ class AppDrawerFragment : Fragment() {
     private fun searchInPlayStore(query: String) {
         try {
             val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = Uri.parse("market://search?q=$query")
+            if (query.isNotEmpty()) {
+                intent.data = Uri.parse("market://search?q=$query")
+            } else {
+                // Open Play Store main page if no query
+                intent.data = Uri.parse("market://")
+            }
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
         } catch (e: Exception) {
             // Fallback to web browser
             val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = Uri.parse("https://play.google.com/store/search?q=$query")
+            if (query.isNotEmpty()) {
+                intent.data = Uri.parse("https://play.google.com/store/search?q=$query")
+            } else {
+                // Open Play Store main page if no query
+                intent.data = Uri.parse("https://play.google.com/store")
+            }
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
         }
@@ -307,16 +316,59 @@ class AppDrawerFragment : Fragment() {
 
     private fun searchInWeb(query: String) {
         val intent = Intent(Intent.ACTION_VIEW)
-        intent.data = Uri.parse("https://www.google.com/search?q=$query")
+        if (query.isNotEmpty()) {
+            intent.data = Uri.parse("https://www.google.com/search?q=$query")
+        } else {
+            // Open Google main page if no query
+            intent.data = Uri.parse("https://www.google.com")
+        }
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         startActivity(intent)
     }
 
     private fun searchInGoogleImages(query: String) {
-        val intent = Intent(Intent.ACTION_VIEW)
-        intent.data = Uri.parse("https://www.google.com/search?q=$query&tbm=isch")
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        startActivity(intent)
+        try {
+            // Try to open Google app
+            val intent = Intent(Intent.ACTION_MAIN)
+            intent.addCategory(Intent.CATEGORY_LAUNCHER)
+            intent.setClassName("com.google.android.googlequicksearchbox", "com.google.android.googlequicksearchbox.SearchActivity")
+
+            if (query.isNotEmpty()) {
+                // Add search query to the intent
+                intent.putExtra("query", query)
+                intent.action = Intent.ACTION_WEB_SEARCH
+                intent.putExtra(android.app.SearchManager.QUERY, query)
+            }
+
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                // Fallback: try to launch Google app with package manager
+                val intent = context?.packageManager?.getLaunchIntentForPackage("com.google.android.googlequicksearchbox")
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    if (query.isNotEmpty()) {
+                        intent.putExtra("query", query)
+                        intent.action = Intent.ACTION_WEB_SEARCH
+                        intent.putExtra(android.app.SearchManager.QUERY, query)
+                    }
+                    startActivity(intent)
+                } else {
+                    throw Exception("Google app not found")
+                }
+            } catch (e2: Exception) {
+                // Final fallback: open in browser
+                val intent = Intent(Intent.ACTION_VIEW)
+                if (query.isNotEmpty()) {
+                    intent.data = Uri.parse("https://www.google.com/search?q=$query")
+                } else {
+                    intent.data = Uri.parse("https://www.google.com")
+                }
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(intent)
+            }
+        }
     }
 
     private fun loadFavorites() {
@@ -398,5 +450,68 @@ class AppDrawerFragment : Fragment() {
 
     private fun closeAppDrawer() {
         (activity as? MainActivity)?.closeAppDrawer()
+    }
+
+    private fun showAppOptionsDialog(app: AppInfo) {
+        val options = arrayOf("App Info", "Uninstall")
+
+        AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
+            .setTitle(app.name)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> openAppInfo(app.packageName)
+                    1 -> uninstallApp(app.packageName)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun openAppInfo(packageName: String) {
+        try {
+            val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            intent.data = Uri.parse("package:$packageName")
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(requireContext(), "Cannot open app info", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun uninstallApp(packageName: String) {
+        try {
+            // Check if it's a system app first
+            val packageManager = requireContext().packageManager
+            val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
+
+            if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0) {
+                android.widget.Toast.makeText(requireContext(), "Cannot uninstall system apps", android.widget.Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // Try the standard uninstall intent
+            val intent = Intent(Intent.ACTION_DELETE)
+            intent.data = Uri.parse("package:$packageName")
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+
+            // Check if there's an activity that can handle this intent
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+            } else {
+                // Fallback: try to open app settings where user can uninstall
+                val settingsIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                settingsIntent.data = Uri.parse("package:$packageName")
+                settingsIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+
+                if (settingsIntent.resolveActivity(packageManager) != null) {
+                    startActivity(settingsIntent)
+                    android.widget.Toast.makeText(requireContext(), "Please use the uninstall button in app settings", android.widget.Toast.LENGTH_LONG).show()
+                } else {
+                    android.widget.Toast.makeText(requireContext(), "Cannot uninstall this app", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(requireContext(), "Cannot uninstall app: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 }

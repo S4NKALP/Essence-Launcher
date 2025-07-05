@@ -19,6 +19,7 @@
 
 package com.example.essencelauncher
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.GestureDetector
@@ -163,8 +164,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onDownSwipe() {
-        Log.d("MainActivity", "Down swipe detected - reserved for future implementation")
-        // TODO: Implement down swipe functionality later
+        Log.d("MainActivity", "Down swipe detected - opening notification panel")
+        openNotificationPanel()
+    }
+
+    private fun openNotificationPanel() {
+        try {
+            // Method 1: Try to expand notification panel using reflection (works on most devices)
+            val statusBarService = getSystemService("statusbar")
+            val statusBarManager = Class.forName("android.app.StatusBarManager")
+            val expandMethod = statusBarManager.getMethod("expandNotificationsPanel")
+            expandMethod.invoke(statusBarService)
+            Log.d("MainActivity", "Notification panel opened successfully")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to open notification panel using reflection", e)
+            try {
+                // Method 2: Fallback - try using broadcast intent (limited compatibility)
+                val intent = Intent("android.intent.action.CLOSE_SYSTEM_DIALOGS")
+                sendBroadcast(intent)
+
+                // Try alternative method for newer Android versions
+                val expandIntent = Intent()
+                expandIntent.action = "android.intent.action.EXPAND_NOTIFICATIONS"
+                sendBroadcast(expandIntent)
+                Log.d("MainActivity", "Attempted to open notification panel using broadcast")
+            } catch (e2: Exception) {
+                Log.e("MainActivity", "All methods to open notification panel failed", e2)
+                // Could show a toast to inform user that gesture is not supported on this device
+            }
+        }
     }
 
     fun openAppDrawer() {

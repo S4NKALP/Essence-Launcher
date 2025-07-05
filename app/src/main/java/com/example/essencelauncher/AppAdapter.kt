@@ -31,7 +31,8 @@ import androidx.recyclerview.widget.RecyclerView
 class AppAdapter(
     private val context: Context,
     private var apps: List<AppInfo>,
-    private val onFavoriteToggle: (AppInfo) -> Unit
+    private val onFavoriteToggle: (AppInfo) -> Unit,
+    private val onAppLongPress: ((AppInfo) -> Unit)? = null
 ) : RecyclerView.Adapter<AppAdapter.AppViewHolder>() {
 
     class AppViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -65,6 +66,12 @@ class AppAdapter(
         // Handle app click to launch
         holder.itemView.setOnClickListener {
             launchApp(app.packageName)
+        }
+
+        // Handle app long press for uninstall/info options
+        holder.itemView.setOnLongClickListener {
+            onAppLongPress?.invoke(app)
+            true
         }
     }
 

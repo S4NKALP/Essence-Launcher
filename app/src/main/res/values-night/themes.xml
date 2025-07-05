@@ -4,4 +4,16 @@
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
     </style>
+
+    <!-- Custom dialog theme with rounded corners and app background -->
+    <style name="CustomDialogTheme" parent="Theme.Material3.DayNight.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/dialog_background</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.5</item>
+        <item name="android:listChoiceIndicatorSingle">@null</item>
+        <item name="android:listChoiceIndicatorMultiple">@null</item>
+        <item name="android:selectableItemBackground">@drawable/no_ripple_background</item>
+        <item name="android:selectableItemBackgroundBorderless">@drawable/no_ripple_background</item>
+        <item name="android:colorControlHighlight">@android:color/transparent</item>
+    </style>
 </resources>

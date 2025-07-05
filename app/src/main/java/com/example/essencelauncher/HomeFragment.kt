@@ -19,10 +19,12 @@
 
 package com.example.essencelauncher
 
+import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
@@ -255,20 +257,16 @@ class HomeFragment : Fragment() {
 
             // Update battery icon based on percentage and charging status
             val iconRes = if (isCharging) {
-                when {
-                    batteryPct >= 90 -> R.drawable.ic_battery_horizontal_charging_full
-                    batteryPct >= 60 -> R.drawable.ic_battery_horizontal_charging_80
-                    batteryPct >= 30 -> R.drawable.ic_battery_horizontal_charging_60
-                    batteryPct >= 15 -> R.drawable.ic_battery_horizontal_charging_30
-                    else -> R.drawable.ic_battery_horizontal_charging_low
-                }
+                // Use charging icon for all charging states
+                R.drawable.ic_battery_charging
             } else {
+                // Use different battery level icons based on percentage
                 when {
-                    batteryPct >= 90 -> R.drawable.ic_battery_horizontal_full
-                    batteryPct >= 60 -> R.drawable.ic_battery_horizontal_80
-                    batteryPct >= 30 -> R.drawable.ic_battery_horizontal_60
-                    batteryPct >= 15 -> R.drawable.ic_battery_horizontal_30
-                    else -> R.drawable.ic_battery_horizontal_low
+                    batteryPct >= 90 -> R.drawable.ic_battery_full
+                    batteryPct >= 60 -> R.drawable.ic_battery_high
+                    batteryPct >= 30 -> R.drawable.ic_battery_medium
+                    batteryPct >= 15 -> R.drawable.ic_battery_low
+                    else -> R.drawable.ic_battery_empty
                 }
             }
             batteryIcon.setImageResource(iconRes)
@@ -329,6 +327,11 @@ class HomeFragment : Fragment() {
                 launchApp(app.packageName)
             }
 
+            favoriteView.setOnLongClickListener {
+                showAppOptionsDialog(app)
+                true
+            }
+
             favoriteAppsContainer.addView(favoriteView)
         }
     }
@@ -342,6 +345,69 @@ class HomeFragment : Fragment() {
             }
         } catch (e: Exception) {
             Toast.makeText(context, "Cannot launch app", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showAppOptionsDialog(app: AppInfo) {
+        val options = arrayOf("App Info", "Uninstall")
+
+        AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
+            .setTitle(app.name)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> openAppInfo(app.packageName)
+                    1 -> uninstallApp(app.packageName)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun openAppInfo(packageName: String) {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            intent.data = Uri.parse("package:$packageName")
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot open app info", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun uninstallApp(packageName: String) {
+        try {
+            // Check if it's a system app first
+            val packageManager = requireContext().packageManager
+            val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
+
+            if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0) {
+                Toast.makeText(context, "Cannot uninstall system apps", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // Try the standard uninstall intent
+            val intent = Intent(Intent.ACTION_DELETE)
+            intent.data = Uri.parse("package:$packageName")
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+
+            // Check if there's an activity that can handle this intent
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+            } else {
+                // Fallback: try to open app settings where user can uninstall
+                val settingsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                settingsIntent.data = Uri.parse("package:$packageName")
+                settingsIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+
+                if (settingsIntent.resolveActivity(packageManager) != null) {
+                    startActivity(settingsIntent)
+                    Toast.makeText(context, "Please use the uninstall button in app settings", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "Cannot uninstall this app", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot uninstall app: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 }
