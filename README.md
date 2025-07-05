@@ -1,2 +1,1 @@
-# minilauncher
-A Minimal Launcher for Android
+# Essence launcher
