@@ -44,12 +44,9 @@ object FontManager {
     private const val PREF_FONT_RESOURCE_ID = "font_resource_id"
     private const val PREF_FONT_FILE_PATH = "font_file_path"
     
-    // Available system fonts
+    // Available system fonts (keeping only Default for fallback)
     private val systemFonts = listOf(
-        FontInfo("Default", FontType.SYSTEM),
-        FontInfo("Sans Serif", FontType.SYSTEM),
-        FontInfo("Serif", FontType.SYSTEM),
-        FontInfo("Monospace", FontType.SYSTEM)
+        FontInfo("Default", FontType.SYSTEM)
     )
     
     // Available resource fonts

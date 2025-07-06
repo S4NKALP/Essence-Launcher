@@ -92,13 +92,7 @@ class FontSelectionBottomSheet : BottomSheetDialogFragment() {
 
         val availableFonts = FontManager.getAllAvailableFonts(requireContext())
 
-        // Add system fonts first
-        val systemFonts = availableFonts.filter { it.type == FontManager.FontType.SYSTEM }
-        for (fontInfo in systemFonts) {
-            addFontItem(fontInfo)
-        }
-
-        // Add custom font button after system fonts
+        // Add custom font button first
         setupAddCustomFontButton()
 
         // Add resource fonts
