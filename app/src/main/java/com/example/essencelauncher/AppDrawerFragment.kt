@@ -60,6 +60,7 @@ class AppDrawerFragment : Fragment() {
     private var allApps = mutableListOf<AppInfo>()
     private var recentApps = mutableListOf<AppInfo>()
     private var favoriteApps = mutableSetOf<String>()
+    private var hiddenApps = mutableSetOf<String>()
     private var isSearchMode = false
     private lateinit var gestureDetector: GestureDetector
 
@@ -69,6 +70,7 @@ class AppDrawerFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_app_drawer, container, false)
 
         loadFavorites()
+        loadHiddenApps()
         initViews(view)
         setupRecyclerView()
         setupSearchFunctionality()
@@ -186,10 +188,11 @@ class AppDrawerFragment : Fragment() {
             }
         }
 
-        // Sort by install time (most recent first) and take top 10
+        // Filter out hidden apps and sort by install time (most recent first) and take top 10
         recentApps.clear()
         recentApps.addAll(
-            allApps.sortedByDescending { it.installTime }.take(10)
+            allApps.filter { !hiddenApps.contains(it.packageName) }
+                .sortedByDescending { it.installTime }.take(10)
         )
 
         recentAppAdapter.updateApps(recentApps)
@@ -202,7 +205,7 @@ class AppDrawerFragment : Fragment() {
         }
 
         val filteredApps = allApps.filter { app ->
-            app.name.contains(query, ignoreCase = true)
+            app.name.contains(query, ignoreCase = true) && !hiddenApps.contains(app.packageName)
         }.map { app ->
             // Update favorite status based on current favorites set
             app.copy(isFavorite = favoriteApps.contains(app.packageName))
@@ -226,10 +229,11 @@ class AppDrawerFragment : Fragment() {
             recentAppsRecyclerView.adapter = searchAppAdapter
         }
 
-        // Show all apps sorted alphabetically with favorite status
-        val allAppsWithFavorites = allApps.map { app ->
-            app.copy(isFavorite = favoriteApps.contains(app.packageName))
-        }.sortedBy { it.name }
+        // Show all apps sorted alphabetically with favorite status, excluding hidden apps
+        val allAppsWithFavorites = allApps.filter { !hiddenApps.contains(it.packageName) }
+            .map { app ->
+                app.copy(isFavorite = favoriteApps.contains(app.packageName))
+            }.sortedBy { it.name }
 
         searchAppAdapter.updateApps(allAppsWithFavorites)
     }
@@ -386,6 +390,20 @@ class AppDrawerFragment : Fragment() {
         prefs.edit().putString("favorite_apps", favoritesString).apply()
     }
 
+    private fun loadHiddenApps() {
+        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val hiddenAppsString = prefs.getString("hidden_apps", "") ?: ""
+        hiddenApps.clear()
+        if (hiddenAppsString.isNotEmpty()) {
+            hiddenApps.addAll(hiddenAppsString.split(",").filter { it.isNotEmpty() })
+        }
+    }
+
+    fun refreshApps() {
+        loadHiddenApps()
+        loadApps()
+    }
+
     private fun loadIconsFromDrawables() {
         // Load icons directly from drawable resources
         playStoreIcon.setImageResource(R.drawable.ic_play_store)
@@ -453,18 +471,59 @@ class AppDrawerFragment : Fragment() {
     }
 
     private fun showAppOptionsDialog(app: AppInfo) {
-        val options = arrayOf("App Info", "Uninstall")
+        val options = arrayOf("Hide App", "App Info", "Uninstall")
 
         AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
             .setTitle(app.name)
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> openAppInfo(app.packageName)
-                    1 -> uninstallApp(app.packageName)
+                    0 -> hideApp(app)
+                    1 -> openAppInfo(app.packageName)
+                    2 -> uninstallApp(app.packageName)
                 }
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun hideApp(app: AppInfo) {
+        hiddenApps.add(app.packageName)
+        saveHiddenApps()
+
+        // Remove from favorites if it was favorited
+        if (favoriteApps.contains(app.packageName)) {
+            favoriteApps.remove(app.packageName)
+            saveFavorites()
+
+            // Update home fragment favorites
+            (activity as? MainActivity)?.let { mainActivity ->
+                val homeFragment = mainActivity.supportFragmentManager.fragments
+                    .find { it is HomeFragment } as? HomeFragment
+                homeFragment?.updateFavoriteApps(getFavoriteApps())
+            }
+        }
+
+        // Refresh the app list
+        loadApps()
+
+        // Notify hidden apps fragment if it exists
+        (activity as? MainActivity)?.let { mainActivity ->
+            val hiddenAppsFragment = mainActivity.supportFragmentManager.fragments
+                .find { it is HiddenAppsFragment } as? HiddenAppsFragment
+            hiddenAppsFragment?.hideApp(app.packageName)
+        }
+
+        android.widget.Toast.makeText(
+            requireContext(),
+            "${app.name} hidden",
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun saveHiddenApps() {
+        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val hiddenAppsString = hiddenApps.joinToString(",")
+        prefs.edit().putString("hidden_apps", hiddenAppsString).apply()
     }
 
     private fun openAppInfo(packageName: String) {

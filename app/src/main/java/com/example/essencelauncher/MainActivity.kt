@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var viewPager : ViewPager2
     lateinit var appDrawerContainer: FrameLayout
+    lateinit var hiddenAppsContainer: FrameLayout
     private lateinit var gestureDetector: GestureDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +51,7 @@ class MainActivity : AppCompatActivity() {
 
         viewPager = findViewById(R.id.viewPager)
         appDrawerContainer = findViewById(R.id.appDrawerContainer)
+        hiddenAppsContainer = findViewById(R.id.hiddenAppsContainer)
 
         val fragments = listOf(LeftFragment(), HomeFragment(), RightFragment())
         viewPager.adapter = object : FragmentStateAdapter(this) {
@@ -75,8 +77,8 @@ class MainActivity : AppCompatActivity() {
             ): Boolean {
                 if (e1 == null) return false
 
-                // Only handle gestures when not in app drawer
-                if (appDrawerContainer.visibility == View.VISIBLE) {
+                // Only handle gestures when not in app drawer or hidden apps
+                if (appDrawerContainer.visibility == View.VISIBLE || hiddenAppsContainer.visibility == View.VISIBLE) {
                     return false
                 }
 
@@ -134,11 +136,91 @@ class MainActivity : AppCompatActivity() {
         // Disable ViewPager2's user input and handle gestures manually
         viewPager.isUserInputEnabled = false
 
-        // Set up touch listener on the ViewPager2
+        // Set up touch listener on the ViewPager2 with multi-touch support
         viewPager.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
+            handleTouchEvent(event)
             true // Consume all touch events
         }
+    }
+
+    private fun handleTouchEvent(event: MotionEvent): Boolean {
+        // Only handle gestures when not in app drawer or hidden apps
+        if (appDrawerContainer.visibility == View.VISIBLE || hiddenAppsContainer.visibility == View.VISIBLE) {
+            return false
+        }
+
+        // Check for pinch-out gesture
+        if (event.pointerCount == 2) {
+            when (event.action and MotionEvent.ACTION_MASK) {
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    // Store initial positions for pinch gesture
+                    initializePinchGesture(event)
+                    return true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    // Check if it's a pinch-out gesture
+                    if (isPinchOutGesture(event)) {
+                        Log.d("MainActivity", "Pinch-out gesture detected - opening hidden apps")
+                        openHiddenApps()
+                        return true
+                    }
+                }
+                MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_UP -> {
+                    resetPinchGesture()
+                }
+            }
+        }
+
+        // Handle single-finger gestures with existing gesture detector
+        return gestureDetector.onTouchEvent(event)
+    }
+
+    private var initialDistance = 0f
+    private var hasInitialDistance = false
+    private var gestureStartTime = 0L
+
+    private fun initializePinchGesture(event: MotionEvent) {
+        if (event.pointerCount == 2) {
+            val x1 = event.getX(0)
+            val y1 = event.getY(0)
+            val x2 = event.getX(1)
+            val y2 = event.getY(1)
+
+            initialDistance = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
+            hasInitialDistance = true
+            gestureStartTime = System.currentTimeMillis()
+        }
+    }
+
+    private fun isPinchOutGesture(event: MotionEvent): Boolean {
+        if (event.pointerCount != 2 || !hasInitialDistance) return false
+
+        val x1 = event.getX(0)
+        val y1 = event.getY(0)
+        val x2 = event.getX(1)
+        val y2 = event.getY(1)
+
+        val currentDistance = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
+        val distanceIncrease = currentDistance - initialDistance
+
+        // Check if the distance has increased significantly (pinch-out)
+        val PINCH_THRESHOLD = 200f
+        val MAX_GESTURE_TIME = 1000L // 1 second max
+
+        val gestureTime = System.currentTimeMillis() - gestureStartTime
+
+        if (distanceIncrease > PINCH_THRESHOLD && gestureTime < MAX_GESTURE_TIME) {
+            resetPinchGesture()
+            return true
+        }
+
+        return false
+    }
+
+    private fun resetPinchGesture() {
+        hasInitialDistance = false
+        initialDistance = 0f
+        gestureStartTime = 0L
     }
 
     private fun navigateToLeftScreen() {
@@ -229,9 +311,50 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun openHiddenApps() {
+        Log.d("MainActivity", "openHiddenApps called")
+        try {
+            // Hide ViewPager and show hidden apps
+            viewPager.visibility = View.GONE
+            hiddenAppsContainer.visibility = View.VISIBLE
+
+            val hiddenAppsFragment = HiddenAppsFragment()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.hiddenAppsContainer, hiddenAppsFragment)
+                .addToBackStack("hidden_apps")
+                .commit()
+            Log.d("MainActivity", "Hidden apps opened successfully")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error opening hidden apps", e)
+        }
+    }
+
+    fun closeHiddenApps() {
+        Log.d("MainActivity", "closeHiddenApps called")
+        // Show ViewPager and hide hidden apps
+        viewPager.visibility = View.VISIBLE
+        hiddenAppsContainer.visibility = View.GONE
+
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack()
+        }
+    }
+
+    fun refreshAppDrawer() {
+        // Find and refresh the app drawer fragment if it's currently visible
+        val appDrawerFragment = supportFragmentManager.fragments
+            .find { it is AppDrawerFragment } as? AppDrawerFragment
+        appDrawerFragment?.refreshApps()
+    }
+
     override fun onBackPressed() {
         if (supportFragmentManager.backStackEntryCount > 0) {
-            closeAppDrawer()
+            // Check which screen is currently open
+            if (hiddenAppsContainer.visibility == View.VISIBLE) {
+                closeHiddenApps()
+            } else if (appDrawerContainer.visibility == View.VISIBLE) {
+                closeAppDrawer()
+            }
         } else {
             super.onBackPressed()
         }
