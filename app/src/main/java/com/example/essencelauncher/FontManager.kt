@@ -44,9 +44,9 @@ object FontManager {
     private const val PREF_FONT_RESOURCE_ID = "font_resource_id"
     private const val PREF_FONT_FILE_PATH = "font_file_path"
     
-    // Available system fonts (keeping only Default for fallback)
+    // Available system fonts (using Android system font)
     private val systemFonts = listOf(
-        FontInfo("Default", FontType.SYSTEM)
+        FontInfo("System", FontType.SYSTEM)
     )
     
     // Available resource fonts
@@ -105,11 +105,11 @@ object FontManager {
     
     fun getCurrentFont(context: Context): FontInfo {
         val prefs = context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
-        val fontName = prefs.getString(PREF_SELECTED_FONT, "Default") ?: "Default"
+        val fontName = prefs.getString(PREF_SELECTED_FONT, "System") ?: "System"
         val fontType = FontType.valueOf(prefs.getString(PREF_FONT_TYPE, FontType.SYSTEM.name) ?: FontType.SYSTEM.name)
         val resourceId = prefs.getInt(PREF_FONT_RESOURCE_ID, -1).takeIf { it != -1 }
         val filePath = prefs.getString(PREF_FONT_FILE_PATH, null)
-        
+
         return FontInfo(fontName, fontType, resourceId, filePath)
     }
     
@@ -130,10 +130,7 @@ object FontManager {
         return when (font.type) {
             FontType.SYSTEM -> {
                 when (font.name) {
-                    "Default" -> Typeface.DEFAULT
-                    "Sans Serif" -> Typeface.SANS_SERIF
-                    "Serif" -> Typeface.SERIF
-                    "Monospace" -> Typeface.MONOSPACE
+                    "System" -> Typeface.DEFAULT
                     else -> Typeface.DEFAULT
                 }
             }
