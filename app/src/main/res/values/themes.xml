@@ -3,6 +3,12 @@
     <style name="Base.Theme.EssenceLauncher" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+        <!-- Enable wallpaper visibility by making window background transparent -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowShowWallpaper">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
     </style>
 
     <style name="Theme.EssenceLauncher" parent="Base.Theme.EssenceLauncher" />

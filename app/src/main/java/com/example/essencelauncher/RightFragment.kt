@@ -23,12 +23,21 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 
 class RightFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_right, container, false)
+        val view = inflater.inflate(R.layout.fragment_right, container, false)
+        applyWallpaperBackground(view)
+        return view
+    }
+
+    private fun applyWallpaperBackground(view: View) {
+        // Apply wallpaper background to the root view
+        val rootView = view.findViewById<LinearLayout>(R.id.rightFragmentRoot)
+        WallpaperManager.applyWallpaperBackground(requireContext(), rootView)
     }
 }

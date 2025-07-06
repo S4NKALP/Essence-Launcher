@@ -65,6 +65,12 @@ class SettingsActivity : AppCompatActivity() {
             openFontSelection()
         }
 
+        // Wallpaper opacity
+        val currentOpacity = WallpaperManager.getWallpaperOpacity(this)
+        addSettingsItem("Wallpaper Opacity", "Current: ${currentOpacity}%") {
+            showWallpaperOpacityDialog()
+        }
+
         // Clear favorites
         addSettingsItem("Clear Favorites", "Remove all favorite apps") {
             showConfirmationDialog("Clear Favorites", "Are you sure you want to remove all favorite apps?") {
@@ -184,6 +190,44 @@ class SettingsActivity : AppCompatActivity() {
     private fun openFontSelection() {
         val fontBottomSheet = FontSelectionBottomSheet.newInstance()
         fontBottomSheet.show(supportFragmentManager, "FontSelectionBottomSheet")
+    }
+
+    private fun showWallpaperOpacityDialog() {
+        val currentOpacity = WallpaperManager.getWallpaperOpacity(this)
+
+        // Create a SeekBar for opacity selection
+        val seekBar = android.widget.SeekBar(this)
+        seekBar.max = 100
+        seekBar.progress = currentOpacity
+
+        val textView = android.widget.TextView(this)
+        textView.text = "Opacity: ${currentOpacity}% (0% = opaque, 100% = transparent)"
+        textView.setPadding(50, 20, 50, 20)
+
+        val layout = android.widget.LinearLayout(this)
+        layout.orientation = android.widget.LinearLayout.VERTICAL
+        layout.addView(textView)
+        layout.addView(seekBar)
+
+        seekBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                textView.text = "Opacity: ${progress}% (0% = opaque, 100% = transparent)"
+            }
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+        })
+
+        AlertDialog.Builder(this, R.style.CustomDialogTheme)
+            .setTitle("Wallpaper Opacity")
+            .setView(layout)
+            .setPositiveButton("Apply") { _, _ ->
+                WallpaperManager.setWallpaperOpacity(this, seekBar.progress)
+                Toast.makeText(this, "Wallpaper opacity updated. Restart launcher to see changes.", Toast.LENGTH_LONG).show()
+                // Refresh the settings item
+                setupSettingsItems()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun applyFonts() {

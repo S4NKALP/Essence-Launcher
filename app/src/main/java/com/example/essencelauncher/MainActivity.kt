@@ -54,6 +54,10 @@ class MainActivity : AppCompatActivity() {
         appDrawerContainer = findViewById(R.id.appDrawerContainer)
         hiddenAppsContainer = findViewById(R.id.hiddenAppsContainer)
 
+        // Apply wallpaper background to main container
+        val mainContainer = findViewById<FrameLayout>(R.id.mainContainer)
+        WallpaperManager.applyWallpaperBackground(this, mainContainer)
+
         val fragments = listOf(LeftFragment(), HomeFragment(), RightFragment())
         viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = fragments.size
@@ -63,6 +67,13 @@ class MainActivity : AppCompatActivity() {
         viewPager.setCurrentItem(1, false)
 
         setupGestureDetector()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh wallpaper background when returning to the launcher
+        val mainContainer = findViewById<FrameLayout>(R.id.mainContainer)
+        WallpaperManager.applyWallpaperBackground(this, mainContainer)
     }
 
     private fun setupGestureDetector() {

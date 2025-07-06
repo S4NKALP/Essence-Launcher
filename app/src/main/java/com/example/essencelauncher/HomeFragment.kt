@@ -40,6 +40,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -91,6 +92,7 @@ class HomeFragment : Fragment() {
         setupBatteryClickListener()
         setupCommunicationClickListeners()
         applyFonts()
+        applyWallpaperBackground(view)
 
         return view
     }
@@ -134,6 +136,12 @@ class HomeFragment : Fragment() {
         FontUtils.applyFontToTextView(requireContext(), timeTextView)
         FontUtils.applyFontToTextView(requireContext(), dateTextView)
         FontUtils.applyFontToTextView(requireContext(), batteryPercentageText)
+    }
+
+    private fun applyWallpaperBackground(view: View) {
+        // Apply wallpaper background to the root view
+        val rootView = view.findViewById<RelativeLayout>(R.id.homeFragmentRoot)
+        WallpaperManager.applyWallpaperBackground(requireContext(), rootView)
     }
 
 

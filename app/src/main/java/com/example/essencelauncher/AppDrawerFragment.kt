@@ -80,6 +80,7 @@ class AppDrawerFragment : Fragment() {
         setupSearchFunctionality()
         setupGestureDetector(view)
         loadApps()
+        applyWallpaperBackground(view)
 
         return view
     }
@@ -511,6 +512,12 @@ class AppDrawerFragment : Fragment() {
                 homeFragment?.updateFavoriteApps(getFavoriteApps())
             }
         }
+    }
+
+    private fun applyWallpaperBackground(view: View) {
+        // Apply wallpaper background to the root view
+        val rootView = view.findViewById<LinearLayout>(R.id.appDrawerRoot)
+        WallpaperManager.applyWallpaperBackground(requireContext(), rootView)
     }
 
     private fun loadIconsFromDrawables() {

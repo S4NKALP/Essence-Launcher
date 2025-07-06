@@ -65,6 +65,7 @@ class HiddenAppsFragment : Fragment() {
         initViews(view)
         setupRecyclerView()
         setupSearchFunctionality()
+        applyWallpaperBackground(view)
 
         loadApps()
 
@@ -234,7 +235,11 @@ class HiddenAppsFragment : Fragment() {
         }
     }
 
-
+    private fun applyWallpaperBackground(view: View) {
+        // Apply wallpaper background to the root view
+        val rootView = view.findViewById<LinearLayout>(R.id.hiddenAppsRoot)
+        WallpaperManager.applyWallpaperBackground(requireContext(), rootView)
+    }
 
     private fun showAppOptionsDialog(app: AppInfo) {
         val lockOption = if (app.isLocked) "Unlock App" else "Lock App"
