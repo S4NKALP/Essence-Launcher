@@ -27,6 +27,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -313,6 +314,43 @@ class MainActivity : AppCompatActivity() {
 
     fun openHiddenApps() {
         Log.d("MainActivity", "openHiddenApps called")
+        authenticateAndOpenHiddenApps()
+    }
+
+    private fun authenticateAndOpenHiddenApps() {
+        if (!BiometricAuthManager.isAuthenticationAvailable(this)) {
+            Toast.makeText(this, "Authentication not available on this device", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Get the current home fragment to use for authentication
+        val homeFragment = supportFragmentManager.fragments
+            .find { it is HomeFragment } as? HomeFragment
+
+        if (homeFragment == null) {
+            Toast.makeText(this, "Unable to authenticate at this time", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authManager = BiometricAuthManager(homeFragment)
+        authManager.authenticate("Hidden Apps", "access", object : BiometricAuthManager.AuthCallback {
+            override fun onAuthSuccess() {
+                // Open hidden apps
+                openHiddenAppsAfterAuth()
+            }
+
+            override fun onAuthError(errorMessage: String) {
+                Toast.makeText(this@MainActivity, "Authentication error: $errorMessage", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onAuthFailed() {
+                Toast.makeText(this@MainActivity, "Authentication failed", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun openHiddenAppsAfterAuth() {
+        Log.d("MainActivity", "openHiddenAppsAfterAuth called")
         try {
             // Hide ViewPager and show hidden apps
             viewPager.visibility = View.GONE

@@ -88,11 +88,13 @@ class BiometricAuthManager(private val fragment: Fragment) {
 
         val title = when (action) {
             "unlock" -> "Unlock $appName"
+            "access" -> "Access $appName"
             else -> "Launch $appName"
         }
 
         val subtitle = when (action) {
             "unlock" -> "Use your biometric credential or device password to unlock this app"
+            "access" -> "Use your biometric credential or device password to access $appName"
             else -> "Use your biometric credential or device password to launch this app"
         }
 
