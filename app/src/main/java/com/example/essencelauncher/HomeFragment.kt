@@ -58,6 +58,7 @@ class HomeFragment : Fragment() {
     private lateinit var favoriteAppsContainer: LinearLayout
     private lateinit var phoneButton: ImageView
     private lateinit var messageButton: ImageView
+    private lateinit var settingsButton: ImageView
     private lateinit var gestureDetector: GestureDetector
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var timeUpdateRunnable: Runnable
@@ -83,6 +84,7 @@ class HomeFragment : Fragment() {
         favoriteAppsContainer = view.findViewById(R.id.favoriteAppsContainer)
         phoneButton = view.findViewById(R.id.phoneButton)
         messageButton = view.findViewById(R.id.messageButton)
+        settingsButton = view.findViewById(R.id.settingsButton)
 
         setupTimeUpdate()
         setupTimeClickListener()
@@ -120,6 +122,10 @@ class HomeFragment : Fragment() {
 
         messageButton.setOnClickListener {
             openMessageApp()
+        }
+
+        settingsButton.setOnClickListener {
+            openSettings()
         }
     }
 
@@ -241,6 +247,15 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun openSettings() {
+        try {
+            val intent = Intent(context, SettingsActivity::class.java)
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot open launcher settings", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun updateBatteryInfo(intent: Intent?) {
         if (intent == null) return
 
@@ -277,8 +292,16 @@ class HomeFragment : Fragment() {
     private fun updateTime() {
         val calendar = Calendar.getInstance()
 
-        // Format time (24-hour format)
-        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+        // Get time format preference
+        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val is24HourFormat = prefs.getBoolean("time_24_hour_format", false)
+
+        // Format time based on preference
+        val timeFormat = if (is24HourFormat) {
+            SimpleDateFormat("HH:mm", Locale.getDefault())
+        } else {
+            SimpleDateFormat("h:mm a", Locale.getDefault())
+        }
         val timeString = timeFormat.format(calendar.time)
         timeTextView.text = timeString
 
