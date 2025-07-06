@@ -136,6 +136,11 @@ class HomeFragment : Fragment() {
         FontUtils.applyFontToTextView(requireContext(), timeTextView)
         FontUtils.applyFontToTextView(requireContext(), dateTextView)
         FontUtils.applyFontToTextView(requireContext(), batteryPercentageText)
+
+        // Apply dynamic text colors
+        TextColorManager.applyTextColor(requireContext(), timeTextView)
+        TextColorManager.applyTextColor(requireContext(), dateTextView)
+        TextColorManager.applyTextColor(requireContext(), batteryPercentageText)
     }
 
     private fun applyWallpaperBackground(view: View) {
@@ -147,6 +152,28 @@ class HomeFragment : Fragment() {
     fun refreshWallpaper() {
         // Refresh wallpaper background on the root view
         view?.let { applyWallpaperBackground(it) }
+        // Refresh text colors based on new wallpaper opacity
+        refreshTextColors()
+    }
+
+    private fun refreshTextColors() {
+        TextColorManager.applyTextColor(requireContext(), timeTextView)
+        TextColorManager.applyTextColor(requireContext(), dateTextView)
+        TextColorManager.applyTextColor(requireContext(), batteryPercentageText)
+
+        // Refresh favorite apps text colors
+        refreshFavoriteAppsTextColors()
+    }
+
+    private fun refreshFavoriteAppsTextColors() {
+        // Apply text colors to all favorite app names
+        for (i in 0 until favoriteAppsContainer.childCount) {
+            val favoriteView = favoriteAppsContainer.getChildAt(i)
+            val favoriteAppName = favoriteView.findViewById<TextView>(R.id.favoriteAppName)
+            favoriteAppName?.let {
+                TextColorManager.applyTextColor(requireContext(), it)
+            }
+        }
     }
 
     fun previewWallpaperOpacity(previewOpacity: Int) {
@@ -382,6 +409,9 @@ class HomeFragment : Fragment() {
 
             // Apply font to favorite app name
             FontUtils.applyFontToTextView(requireContext(), favoriteAppName)
+
+            // Apply dynamic text color
+            TextColorManager.applyTextColor(requireContext(), favoriteAppName)
 
             favoriteView.setOnClickListener {
                 if (app.isLocked) {

@@ -39,6 +39,9 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var settingsContainer: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Apply saved theme mode before calling super.onCreate
+        ThemeManager.applySavedThemeMode(this)
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
@@ -72,6 +75,12 @@ class SettingsActivity : AppCompatActivity() {
         val currentFont = FontManager.getCurrentFont(this)
         addSettingsItem("Font Family", "Current: ${currentFont.name}") {
             openFontSelection()
+        }
+
+        // Theme mode
+        val currentTheme = ThemeManager.getCurrentThemeMode(this)
+        addSettingsItem("Theme Mode", "Current: ${currentTheme.displayName}") {
+            openThemeSelection()
         }
 
         // Show wallpaper toggle
@@ -215,6 +224,11 @@ class SettingsActivity : AppCompatActivity() {
         fontBottomSheet.show(supportFragmentManager, "FontSelectionBottomSheet")
     }
 
+    private fun openThemeSelection() {
+        val themeBottomSheet = ThemeSelectionBottomSheet.newInstance()
+        themeBottomSheet.show(supportFragmentManager, "ThemeSelectionBottomSheet")
+    }
+
     private fun showWallpaperOpacityDialog() {
         val opacityBottomSheet = WallpaperOpacityBottomSheet.newInstance()
         opacityBottomSheet.show(supportFragmentManager, "WallpaperOpacityBottomSheet")
@@ -246,6 +260,10 @@ class SettingsActivity : AppCompatActivity() {
         // Apply font to the header
         val headerText = findViewById<TextView>(R.id.headerTitle)
         headerText?.let { FontUtils.applyFontToTextView(this, it) }
+
+        // Apply dynamic text colors
+        TextColorManager.applyTextColorsToViewGroup(this, settingsContainer)
+        headerText?.let { TextColorManager.applyTextColor(this, it) }
     }
 
     private fun openDefaultLauncherSettings() {

@@ -74,6 +74,13 @@ class HiddenAppsFragment : Fragment() {
         return view
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // Apply text colors when fragment is created
+        refreshTextColors()
+    }
+
     private fun initViews(view: View) {
         hiddenAppsRecyclerView = view.findViewById(R.id.hiddenAppsRecyclerView)
         hiddenAppsSearchEditText = view.findViewById(R.id.hiddenAppsSearchEditText)
@@ -246,6 +253,75 @@ class HiddenAppsFragment : Fragment() {
     fun refreshWallpaper() {
         // Refresh wallpaper background on the root view
         view?.let { applyWallpaperBackground(it) }
+        // Refresh text colors based on new wallpaper opacity
+        refreshTextColors()
+    }
+
+    private fun refreshTextColors() {
+        view?.let { v ->
+            // Apply text colors to search EditText
+            val searchEditText = v.findViewById<EditText>(R.id.hiddenAppsSearchEditText)
+            searchEditText?.let { editText ->
+                val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+                val wallpaperOpacity = prefs.getInt("wallpaper_opacity", 20)
+
+                if (wallpaperOpacity >= 50) {
+                    // Use full white color for high wallpaper opacity
+                    editText.setTextColor(android.graphics.Color.WHITE)
+                    editText.setHintTextColor(android.graphics.Color.WHITE)
+                } else {
+                    // Use Material 3 primary colors for low wallpaper opacity
+                    val typedArray = requireContext().obtainStyledAttributes(intArrayOf(
+                        android.R.attr.textColorPrimary,
+                        android.R.attr.textColorSecondary
+                    ))
+                    val primaryColor = typedArray.getColor(0, android.graphics.Color.BLACK)
+                    val secondaryColor = typedArray.getColor(1, android.graphics.Color.GRAY)
+                    typedArray.recycle()
+
+                    editText.setTextColor(primaryColor)
+                    editText.setHintTextColor(secondaryColor)
+                }
+            }
+
+            // Apply text colors to all text elements in the layout
+            applyTextColorsToAllElements(v)
+
+            // Refresh adapter to update text colors in RecyclerView items
+            if (::hiddenAppAdapter.isInitialized) {
+                hiddenAppAdapter.notifyDataSetChanged()
+            }
+        }
+    }
+
+    private fun applyTextColorsToAllElements(view: View) {
+        // Apply text colors to the entire view hierarchy
+        TextColorManager.applyTextColorsToViewGroup(requireContext(), view as ViewGroup)
+
+        // Specifically apply to key text elements to ensure they're updated
+        val hiddenAppsCount = view.findViewById<TextView>(R.id.hiddenAppsCount)
+        hiddenAppsCount?.let { TextColorManager.applyTextColor(requireContext(), it, isSecondary = true) }
+
+        // Apply to all TextViews in the layout
+        applyTextColorsRecursively(view)
+    }
+
+    private fun applyTextColorsRecursively(view: View) {
+        when (view) {
+            is TextView -> {
+                // Determine if this is secondary text based on text size or content
+                val isSecondary = view.textSize < 16f ||
+                                 view.id == R.id.hiddenAppsCount ||
+                                 view.text?.contains("Long press") == true ||
+                                 view.text?.contains("Search hidden") == true
+                TextColorManager.applyTextColor(requireContext(), view, isSecondary)
+            }
+            is ViewGroup -> {
+                for (i in 0 until view.childCount) {
+                    applyTextColorsRecursively(view.getChildAt(i))
+                }
+            }
+        }
     }
 
     fun previewWallpaperOpacity(previewOpacity: Int) {

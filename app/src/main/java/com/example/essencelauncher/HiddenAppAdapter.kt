@@ -52,6 +52,9 @@ class HiddenAppAdapter(
         val app = apps[position]
         holder.appName.text = app.displayName
 
+        // Apply dynamic text color
+        TextColorManager.applyTextColor(context, holder.appName)
+
         // Show/hide lock icon based on locked status
         holder.lockIcon.visibility = if (app.isLocked) View.VISIBLE else View.GONE
 

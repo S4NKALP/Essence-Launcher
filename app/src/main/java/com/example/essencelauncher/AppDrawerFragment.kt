@@ -90,6 +90,9 @@ class AppDrawerFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Apply text colors
+        refreshTextColors()
+
         // Automatically show keyboard and focus on search
         showKeyboardAndFocus()
     }
@@ -525,6 +528,47 @@ class AppDrawerFragment : Fragment() {
     fun refreshWallpaper() {
         // Refresh wallpaper background on the root view
         view?.let { applyWallpaperBackground(it) }
+        // Refresh text colors based on new wallpaper opacity
+        refreshTextColors()
+    }
+
+    private fun refreshTextColors() {
+        view?.let { v ->
+            val searchEditText = v.findViewById<EditText>(R.id.searchEditText)
+            searchEditText?.let { editText ->
+                val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+                val wallpaperOpacity = prefs.getInt("wallpaper_opacity", 20)
+
+                if (wallpaperOpacity >= 50) {
+                    // Use full white color for high wallpaper opacity
+                    editText.setTextColor(android.graphics.Color.WHITE)
+                    editText.setHintTextColor(android.graphics.Color.WHITE)
+                } else {
+                    // Use Material 3 primary colors for low wallpaper opacity
+                    val typedArray = requireContext().obtainStyledAttributes(intArrayOf(
+                        android.R.attr.textColorPrimary,
+                        android.R.attr.textColorSecondary
+                    ))
+                    val primaryColor = typedArray.getColor(0, android.graphics.Color.BLACK)
+                    val secondaryColor = typedArray.getColor(1, android.graphics.Color.GRAY)
+                    typedArray.recycle()
+
+                    editText.setTextColor(primaryColor)
+                    editText.setHintTextColor(secondaryColor)
+                }
+            }
+
+            // Apply text colors to the entire view hierarchy
+            TextColorManager.applyTextColorsToView(requireContext(), v)
+
+            // Refresh adapters to update text colors in RecyclerView items
+            if (::recentAppAdapter.isInitialized) {
+                recentAppAdapter.notifyDataSetChanged()
+            }
+            if (::searchAppAdapter.isInitialized) {
+                searchAppAdapter.notifyDataSetChanged()
+            }
+        }
     }
 
     fun previewWallpaperOpacity(previewOpacity: Int) {

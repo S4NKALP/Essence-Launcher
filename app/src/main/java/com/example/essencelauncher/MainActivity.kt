@@ -46,6 +46,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gestureDetector: GestureDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Apply saved theme mode before calling super.onCreate
+        ThemeManager.applySavedThemeMode(this)
+
         super.onCreate(savedInstanceState)
         // Remove fullscreen flags to allow proper keyboard handling
         setContentView(R.layout.activity_main)

@@ -55,6 +55,9 @@ class AppAdapter(
 
         holder.appNameText.text = app.displayName
 
+        // Apply dynamic text color
+        TextColorManager.applyTextColor(context, holder.appNameText)
+
         // Set star icon based on favorite status
         holder.starButton.setImageResource(
             if (app.isFavorite) R.drawable.ic_star else R.drawable.ic_star_outline

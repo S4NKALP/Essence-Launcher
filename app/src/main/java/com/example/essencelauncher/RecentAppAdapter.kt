@@ -53,6 +53,9 @@ class RecentAppAdapter(
 
         holder.appNameText.text = app.displayName
 
+        // Apply dynamic text color
+        TextColorManager.applyTextColor(context, holder.appNameText)
+
         // Show/hide lock icon based on locked status
         holder.lockIcon.visibility = if (app.isLocked) View.VISIBLE else View.GONE
         
