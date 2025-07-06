@@ -44,8 +44,17 @@ class SettingsActivity : AppCompatActivity() {
 
         settingsContainer = findViewById(R.id.settingsContainer)
 
+        // Apply wallpaper background immediately
+        applyWallpaperBackground()
+
         setupSettingsItems()
         applyFonts()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh wallpaper background when returning to settings
+        applyWallpaperBackground()
     }
 
     private fun setupSettingsItems() {
@@ -193,41 +202,27 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showWallpaperOpacityDialog() {
-        val currentOpacity = WallpaperManager.getWallpaperOpacity(this)
+        val opacityBottomSheet = WallpaperOpacityBottomSheet.newInstance()
+        opacityBottomSheet.show(supportFragmentManager, "WallpaperOpacityBottomSheet")
+    }
 
-        // Create a SeekBar for opacity selection
-        val seekBar = android.widget.SeekBar(this)
-        seekBar.max = 100
-        seekBar.progress = currentOpacity
+    fun applyWallpaperBackground() {
+        // Apply wallpaper background to the root container
+        val rootContainer = findViewById<LinearLayout>(R.id.settingsRoot)
+        if (rootContainer != null) {
+            WallpaperManager.applyWallpaperBackground(this, rootContainer)
+        } else {
+            // Fallback: apply to the main content view
+            val contentView = findViewById<View>(android.R.id.content)
+            WallpaperManager.applyWallpaperBackground(this, contentView)
+        }
+    }
 
-        val textView = android.widget.TextView(this)
-        textView.text = "Opacity: ${currentOpacity}% (0% = opaque, 100% = transparent)"
-        textView.setPadding(50, 20, 50, 20)
-
-        val layout = android.widget.LinearLayout(this)
-        layout.orientation = android.widget.LinearLayout.VERTICAL
-        layout.addView(textView)
-        layout.addView(seekBar)
-
-        seekBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                textView.text = "Opacity: ${progress}% (0% = opaque, 100% = transparent)"
-            }
-            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
-        })
-
-        AlertDialog.Builder(this, R.style.CustomDialogTheme)
-            .setTitle("Wallpaper Opacity")
-            .setView(layout)
-            .setPositiveButton("Apply") { _, _ ->
-                WallpaperManager.setWallpaperOpacity(this, seekBar.progress)
-                Toast.makeText(this, "Wallpaper opacity updated. Restart launcher to see changes.", Toast.LENGTH_LONG).show()
-                // Refresh the settings item
-                setupSettingsItems()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+    fun refreshSettingsDisplay() {
+        // Clear and rebuild the settings items to show updated values
+        settingsContainer.removeAllViews()
+        setupSettingsItems()
+        applyFonts()
     }
 
     private fun applyFonts() {

@@ -295,6 +295,9 @@ class MainActivity : AppCompatActivity() {
             // Set proper soft input mode for keyboard handling
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
+            // Apply wallpaper background to app drawer container immediately
+            WallpaperManager.applyWallpaperBackground(this, appDrawerContainer)
+
             // Hide ViewPager and show app drawer
             viewPager.visibility = View.GONE
             appDrawerContainer.visibility = View.VISIBLE
@@ -363,6 +366,9 @@ class MainActivity : AppCompatActivity() {
     private fun openHiddenAppsAfterAuth() {
         Log.d("MainActivity", "openHiddenAppsAfterAuth called")
         try {
+            // Apply wallpaper background to hidden apps container immediately
+            WallpaperManager.applyWallpaperBackground(this, hiddenAppsContainer)
+
             // Hide ViewPager and show hidden apps
             viewPager.visibility = View.GONE
             hiddenAppsContainer.visibility = View.VISIBLE
@@ -394,6 +400,48 @@ class MainActivity : AppCompatActivity() {
         val appDrawerFragment = supportFragmentManager.fragments
             .find { it is AppDrawerFragment } as? AppDrawerFragment
         appDrawerFragment?.refreshApps()
+    }
+
+    fun refreshWallpaper() {
+        // Refresh wallpaper background on main container (for ViewPager fragments)
+        val mainContainer = findViewById<FrameLayout>(R.id.mainContainer)
+        WallpaperManager.applyWallpaperBackground(this, mainContainer)
+
+        // Only refresh wallpaper on standalone fragments (AppDrawer and HiddenApps)
+        // ViewPager fragments (Home, Left, Right) get wallpaper from main container
+        supportFragmentManager.fragments.forEach { fragment ->
+            when (fragment) {
+                is AppDrawerFragment -> fragment.refreshWallpaper()
+                is HiddenAppsFragment -> fragment.refreshWallpaper()
+                // Don't refresh Home, Left, Right fragments - they inherit from main container
+            }
+        }
+    }
+
+    fun previewWallpaperOpacity(previewOpacity: Int) {
+        // Apply wallpaper with preview opacity on main container (for ViewPager fragments)
+        val mainContainer = findViewById<FrameLayout>(R.id.mainContainer)
+        WallpaperManager.applyWallpaperBackgroundWithOpacity(this, mainContainer, previewOpacity)
+
+        // Apply wallpaper with preview opacity to app drawer container if visible
+        if (appDrawerContainer.visibility == View.VISIBLE) {
+            WallpaperManager.applyWallpaperBackgroundWithOpacity(this, appDrawerContainer, previewOpacity)
+        }
+
+        // Apply wallpaper with preview opacity to hidden apps container if visible
+        if (hiddenAppsContainer.visibility == View.VISIBLE) {
+            WallpaperManager.applyWallpaperBackgroundWithOpacity(this, hiddenAppsContainer, previewOpacity)
+        }
+
+        // Only preview wallpaper on standalone fragments (AppDrawer and HiddenApps)
+        // ViewPager fragments (Home, Left, Right) get wallpaper from main container
+        supportFragmentManager.fragments.forEach { fragment ->
+            when (fragment) {
+                is AppDrawerFragment -> fragment.previewWallpaperOpacity(previewOpacity)
+                is HiddenAppsFragment -> fragment.previewWallpaperOpacity(previewOpacity)
+                // Don't preview on Home, Left, Right fragments - they inherit from main container
+            }
+        }
     }
 
     override fun onBackPressed() {

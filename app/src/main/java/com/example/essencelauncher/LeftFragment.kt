@@ -31,7 +31,7 @@ class LeftFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_left, container, false)
-        applyWallpaperBackground(view)
+        // Don't apply wallpaper background - inherit from main container
         return view
     }
 
@@ -39,5 +39,23 @@ class LeftFragment : Fragment() {
         // Apply wallpaper background to the root view
         val rootView = view.findViewById<LinearLayout>(R.id.leftFragmentRoot)
         WallpaperManager.applyWallpaperBackground(requireContext(), rootView)
+    }
+
+    fun refreshWallpaper() {
+        // Refresh wallpaper background on the root view
+        view?.let { applyWallpaperBackground(it) }
+    }
+
+    fun previewWallpaperOpacity(previewOpacity: Int) {
+        // Apply wallpaper with preview opacity on the root view
+        view?.let { v ->
+            val rootView = v.findViewById<LinearLayout>(R.id.leftFragmentRoot)
+            WallpaperManager.applyWallpaperBackgroundWithOpacity(requireContext(), rootView, previewOpacity)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Don't refresh wallpaper background - inherit from main container
     }
 }

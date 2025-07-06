@@ -71,6 +71,9 @@ class AppDrawerFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_app_drawer, container, false)
 
+        // Apply wallpaper background immediately to prevent flash
+        applyWallpaperBackground(view)
+
         loadFavorites()
         loadHiddenApps()
         loadCustomNames()
@@ -80,7 +83,6 @@ class AppDrawerFragment : Fragment() {
         setupSearchFunctionality()
         setupGestureDetector(view)
         loadApps()
-        applyWallpaperBackground(view)
 
         return view
     }
@@ -518,6 +520,25 @@ class AppDrawerFragment : Fragment() {
         // Apply wallpaper background to the root view
         val rootView = view.findViewById<LinearLayout>(R.id.appDrawerRoot)
         WallpaperManager.applyWallpaperBackground(requireContext(), rootView)
+    }
+
+    fun refreshWallpaper() {
+        // Refresh wallpaper background on the root view
+        view?.let { applyWallpaperBackground(it) }
+    }
+
+    fun previewWallpaperOpacity(previewOpacity: Int) {
+        // Apply wallpaper with preview opacity on the root view
+        view?.let { v ->
+            val rootView = v.findViewById<LinearLayout>(R.id.appDrawerRoot)
+            WallpaperManager.applyWallpaperBackgroundWithOpacity(requireContext(), rootView, previewOpacity)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh wallpaper background when fragment becomes visible
+        view?.let { applyWallpaperBackground(it) }
     }
 
     private fun loadIconsFromDrawables() {

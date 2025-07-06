@@ -92,7 +92,7 @@ class HomeFragment : Fragment() {
         setupBatteryClickListener()
         setupCommunicationClickListeners()
         applyFonts()
-        applyWallpaperBackground(view)
+        // Don't apply wallpaper background - inherit from main container
 
         return view
     }
@@ -142,6 +142,19 @@ class HomeFragment : Fragment() {
         // Apply wallpaper background to the root view
         val rootView = view.findViewById<RelativeLayout>(R.id.homeFragmentRoot)
         WallpaperManager.applyWallpaperBackground(requireContext(), rootView)
+    }
+
+    fun refreshWallpaper() {
+        // Refresh wallpaper background on the root view
+        view?.let { applyWallpaperBackground(it) }
+    }
+
+    fun previewWallpaperOpacity(previewOpacity: Int) {
+        // Apply wallpaper with preview opacity on the root view
+        view?.let { v ->
+            val rootView = v.findViewById<RelativeLayout>(R.id.homeFragmentRoot)
+            WallpaperManager.applyWallpaperBackgroundWithOpacity(requireContext(), rootView, previewOpacity)
+        }
     }
 
 
@@ -330,6 +343,8 @@ class HomeFragment : Fragment() {
         super.onResume()
         updateTime() // Update immediately when fragment becomes visible
         handler.post(timeUpdateRunnable) // Start the timer
+
+        // Don't refresh wallpaper background - inherit from main container
 
         // Register battery receiver
         val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
