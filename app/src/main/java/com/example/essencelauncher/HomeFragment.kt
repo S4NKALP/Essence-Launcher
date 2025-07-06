@@ -90,6 +90,7 @@ class HomeFragment : Fragment() {
         setupTimeClickListener()
         setupBatteryClickListener()
         setupCommunicationClickListeners()
+        applyFonts()
 
         return view
     }
@@ -127,6 +128,12 @@ class HomeFragment : Fragment() {
         settingsButton.setOnClickListener {
             openSettings()
         }
+    }
+
+    private fun applyFonts() {
+        FontUtils.applyFontToTextView(requireContext(), timeTextView)
+        FontUtils.applyFontToTextView(requireContext(), dateTextView)
+        FontUtils.applyFontToTextView(requireContext(), batteryPercentageText)
     }
 
 
@@ -349,6 +356,9 @@ class HomeFragment : Fragment() {
 
             favoriteAppName.text = app.displayName
             lockIcon.visibility = if (app.isLocked) View.VISIBLE else View.GONE
+
+            // Apply font to favorite app name
+            FontUtils.applyFontToTextView(requireContext(), favoriteAppName)
 
             favoriteView.setOnClickListener {
                 if (app.isLocked) {

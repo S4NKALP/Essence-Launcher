@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="?android:attr/colorBackground">
 
@@ -19,8 +19,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Launcher Settings"
-            android:textSize="24sp"
+            android:text="Font Family"
+            android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="?android:attr/textColorPrimary" />
 
@@ -33,15 +33,14 @@
         android:background="?android:attr/listDivider"
         android:layout_marginHorizontal="16dp" />
 
-    <!-- Settings Container -->
+    <!-- Fonts Container -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="320dp"
         android:scrollbars="none">
 
         <LinearLayout
-            android:id="@+id/settingsContainer"
+            android:id="@+id/fontsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"

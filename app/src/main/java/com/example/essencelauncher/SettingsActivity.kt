@@ -45,6 +45,7 @@ class SettingsActivity : AppCompatActivity() {
         settingsContainer = findViewById(R.id.settingsContainer)
 
         setupSettingsItems()
+        applyFonts()
     }
 
     private fun setupSettingsItems() {
@@ -56,6 +57,12 @@ class SettingsActivity : AppCompatActivity() {
             prefs.edit().putBoolean("time_24_hour_format", isEnabled).apply()
             val formatName = if (isEnabled) "24-hour format" else "12-hour format"
             Toast.makeText(this, "Time format changed to $formatName", Toast.LENGTH_SHORT).show()
+        }
+
+        // Font family
+        val currentFont = FontManager.getCurrentFont(this)
+        addSettingsItem("Font Family", "Current: ${currentFont.name}") {
+            openFontSelection()
         }
 
         // Clear favorites
@@ -172,6 +179,20 @@ class SettingsActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
         prefs.edit().remove("locked_apps").apply()
         Toast.makeText(this, "All apps unlocked", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun openFontSelection() {
+        val fontBottomSheet = FontSelectionBottomSheet.newInstance()
+        fontBottomSheet.show(supportFragmentManager, "FontSelectionBottomSheet")
+    }
+
+    private fun applyFonts() {
+        // Apply fonts to the entire settings container
+        FontUtils.applyFontToViewGroup(this, settingsContainer)
+
+        // Apply font to the header
+        val headerText = findViewById<TextView>(R.id.headerTitle)
+        headerText?.let { FontUtils.applyFontToTextView(this, it) }
     }
 
     private fun openDefaultLauncherSettings() {
