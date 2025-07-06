@@ -45,8 +45,8 @@ class RecentAppAdapter(
 
     override fun onBindViewHolder(holder: RecentAppViewHolder, position: Int) {
         val app = apps[position]
-        
-        holder.appNameText.text = app.name
+
+        holder.appNameText.text = app.displayName
         
         // Handle app click to launch
         holder.itemView.setOnClickListener {

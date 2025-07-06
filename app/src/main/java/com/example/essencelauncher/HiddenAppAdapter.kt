@@ -45,7 +45,7 @@ class HiddenAppAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val app = apps[position]
-        holder.appName.text = app.name
+        holder.appName.text = app.displayName
 
         // Set click listener to launch app
         holder.itemView.setOnClickListener {

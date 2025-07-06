@@ -48,8 +48,8 @@ class AppAdapter(
 
     override fun onBindViewHolder(holder: AppViewHolder, position: Int) {
         val app = apps[position]
-        
-        holder.appNameText.text = app.name
+
+        holder.appNameText.text = app.displayName
         
         // Set star icon based on favorite status
         holder.starButton.setImageResource(

@@ -50,6 +50,7 @@ class HiddenAppsFragment : Fragment() {
     private var allApps = mutableListOf<AppInfo>()
     private var hiddenApps = mutableListOf<AppInfo>()
     private var hiddenAppPackages = mutableSetOf<String>()
+    private var customAppNames = mutableMapOf<String, String>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -57,6 +58,7 @@ class HiddenAppsFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_hidden_apps, container, false)
 
         loadHiddenApps()
+        loadCustomNames()
         initViews(view)
         setupRecyclerView()
         setupSearchFunctionality()
@@ -116,8 +118,9 @@ class HiddenAppsFragment : Fragment() {
             try {
                 val packageInfo = packageManager.getPackageInfo(packageName, 0)
                 val installTime = packageInfo.firstInstallTime
+                val customName = customAppNames[packageName]
 
-                allApps.add(AppInfo(appName, packageName, installTime, false))
+                allApps.add(AppInfo(appName, packageName, installTime, false, customName))
             } catch (e: Exception) {
                 // Skip apps that can't be queried
             }
@@ -130,7 +133,7 @@ class HiddenAppsFragment : Fragment() {
         hiddenApps.clear()
         hiddenApps.addAll(
             allApps.filter { hiddenAppPackages.contains(it.packageName) }
-                .sortedBy { it.name }
+                .sortedBy { it.displayName }
         )
 
         updateUI()
@@ -141,7 +144,7 @@ class HiddenAppsFragment : Fragment() {
             hiddenApps
         } else {
             hiddenApps.filter { app ->
-                app.name.contains(query, ignoreCase = true)
+                app.name.contains(query, ignoreCase = true) || app.displayName.contains(query, ignoreCase = true)
             }
         }
 
@@ -204,21 +207,74 @@ class HiddenAppsFragment : Fragment() {
         return hiddenAppPackages.toSet()
     }
 
+    private fun loadCustomNames() {
+        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val customNamesString = prefs.getString("custom_app_names", "") ?: ""
+        customAppNames.clear()
+        if (customNamesString.isNotEmpty()) {
+            customNamesString.split("|").forEach { entry ->
+                val parts = entry.split(":")
+                if (parts.size == 2) {
+                    customAppNames[parts[0]] = parts[1]
+                }
+            }
+        }
+    }
+
 
 
     private fun showAppOptionsDialog(app: AppInfo) {
-        val options = arrayOf("Unhide", "App Info", "Uninstall")
+        val options = arrayOf("Rename", "Unhide", "App Info", "Uninstall")
 
         AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
-            .setTitle(app.name)
+            .setTitle(app.displayName)
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> unhideApp(app)
-                    1 -> openAppInfo(app.packageName)
-                    2 -> uninstallApp(app.packageName)
+                    0 -> showRenameDialog(app)
+                    1 -> unhideApp(app)
+                    2 -> openAppInfo(app.packageName)
+                    3 -> uninstallApp(app.packageName)
                 }
             }
             .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showRenameDialog(app: AppInfo) {
+        val editText = EditText(requireContext())
+        editText.setText(app.customName ?: app.name)
+        editText.selectAll()
+
+        AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
+            .setTitle("Rename App")
+            .setMessage("Enter a new name for ${app.name}")
+            .setView(editText)
+            .setPositiveButton("Save") { _, _ ->
+                val newName = editText.text.toString().trim()
+                // Get the app drawer fragment and update the custom name
+                (activity as? MainActivity)?.let { mainActivity ->
+                    val appDrawerFragment = mainActivity.supportFragmentManager.fragments
+                        .find { it is AppDrawerFragment } as? AppDrawerFragment
+                    appDrawerFragment?.setCustomAppName(app.packageName, newName)
+
+                    // Update the current app in the list
+                    app.customName = if (newName.isBlank()) null else newName
+                    hiddenAppAdapter.updateApps(hiddenApps)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .setNeutralButton("Reset") { _, _ ->
+                // Get the app drawer fragment and reset the custom name
+                (activity as? MainActivity)?.let { mainActivity ->
+                    val appDrawerFragment = mainActivity.supportFragmentManager.fragments
+                        .find { it is AppDrawerFragment } as? AppDrawerFragment
+                    appDrawerFragment?.setCustomAppName(app.packageName, "")
+
+                    // Update the current app in the list
+                    app.customName = null
+                    hiddenAppAdapter.updateApps(hiddenApps)
+                }
+            }
             .show()
     }
 

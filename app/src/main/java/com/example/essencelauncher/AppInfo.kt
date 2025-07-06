@@ -23,5 +23,9 @@ data class AppInfo(
     val name: String,
     val packageName: String,
     val installTime: Long,
-    var isFavorite: Boolean = false
-)
+    var isFavorite: Boolean = false,
+    var customName: String? = null
+) {
+    val displayName: String
+        get() = customName?.takeIf { it.isNotBlank() } ?: name
+}

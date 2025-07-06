@@ -37,6 +37,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -321,7 +322,7 @@ class HomeFragment : Fragment() {
                 .inflate(R.layout.item_favorite_app, favoriteAppsContainer, false)
 
             val favoriteAppName = favoriteView.findViewById<TextView>(R.id.favoriteAppName)
-            favoriteAppName.text = app.name
+            favoriteAppName.text = app.displayName
 
             favoriteView.setOnClickListener {
                 launchApp(app.packageName)
@@ -349,17 +350,48 @@ class HomeFragment : Fragment() {
     }
 
     private fun showAppOptionsDialog(app: AppInfo) {
-        val options = arrayOf("App Info", "Uninstall")
+        val options = arrayOf("Rename", "App Info", "Uninstall")
 
         AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
-            .setTitle(app.name)
+            .setTitle(app.displayName)
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> openAppInfo(app.packageName)
-                    1 -> uninstallApp(app.packageName)
+                    0 -> showRenameDialog(app)
+                    1 -> openAppInfo(app.packageName)
+                    2 -> uninstallApp(app.packageName)
                 }
             }
             .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showRenameDialog(app: AppInfo) {
+        val editText = EditText(requireContext())
+        editText.setText(app.customName ?: app.name)
+        editText.selectAll()
+
+        AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
+            .setTitle("Rename App")
+            .setMessage("Enter a new name for ${app.name}")
+            .setView(editText)
+            .setPositiveButton("Save") { _, _ ->
+                val newName = editText.text.toString().trim()
+                // Get the app drawer fragment and update the custom name
+                (activity as? MainActivity)?.let { mainActivity ->
+                    val appDrawerFragment = mainActivity.supportFragmentManager.fragments
+                        .find { it is AppDrawerFragment } as? AppDrawerFragment
+                    appDrawerFragment?.setCustomAppName(app.packageName, newName)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .setNeutralButton("Reset") { _, _ ->
+                // Get the app drawer fragment and reset the custom name
+                (activity as? MainActivity)?.let { mainActivity ->
+                    val appDrawerFragment = mainActivity.supportFragmentManager.fragments
+                        .find { it is AppDrawerFragment } as? AppDrawerFragment
+                    appDrawerFragment?.setCustomAppName(app.packageName, "")
+                }
+            }
             .show()
     }
 

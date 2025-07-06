@@ -61,6 +61,7 @@ class AppDrawerFragment : Fragment() {
     private var recentApps = mutableListOf<AppInfo>()
     private var favoriteApps = mutableSetOf<String>()
     private var hiddenApps = mutableSetOf<String>()
+    private var customAppNames = mutableMapOf<String, String>()
     private var isSearchMode = false
     private lateinit var gestureDetector: GestureDetector
 
@@ -71,6 +72,7 @@ class AppDrawerFragment : Fragment() {
 
         loadFavorites()
         loadHiddenApps()
+        loadCustomNames()
         initViews(view)
         setupRecyclerView()
         setupSearchFunctionality()
@@ -181,8 +183,9 @@ class AppDrawerFragment : Fragment() {
                 val packageInfo = packageManager.getPackageInfo(packageName, 0)
                 val installTime = packageInfo.firstInstallTime
                 val isFavorite = favoriteApps.contains(packageName)
+                val customName = customAppNames[packageName]
 
-                allApps.add(AppInfo(appName, packageName, installTime, isFavorite))
+                allApps.add(AppInfo(appName, packageName, installTime, isFavorite, customName))
             } catch (e: Exception) {
                 // Skip apps that can't be queried
             }
@@ -205,7 +208,7 @@ class AppDrawerFragment : Fragment() {
         }
 
         val filteredApps = allApps.filter { app ->
-            app.name.contains(query, ignoreCase = true) && !hiddenApps.contains(app.packageName)
+            (app.name.contains(query, ignoreCase = true) || app.displayName.contains(query, ignoreCase = true)) && !hiddenApps.contains(app.packageName)
         }.map { app ->
             // Update favorite status based on current favorites set
             app.copy(isFavorite = favoriteApps.contains(app.packageName))
@@ -233,7 +236,7 @@ class AppDrawerFragment : Fragment() {
         val allAppsWithFavorites = allApps.filter { !hiddenApps.contains(it.packageName) }
             .map { app ->
                 app.copy(isFavorite = favoriteApps.contains(app.packageName))
-            }.sortedBy { it.name }
+            }.sortedBy { it.displayName }
 
         searchAppAdapter.updateApps(allAppsWithFavorites)
     }
@@ -401,7 +404,61 @@ class AppDrawerFragment : Fragment() {
 
     fun refreshApps() {
         loadHiddenApps()
+        loadCustomNames()
         loadApps()
+    }
+
+    private fun loadCustomNames() {
+        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val customNamesString = prefs.getString("custom_app_names", "") ?: ""
+        customAppNames.clear()
+        if (customNamesString.isNotEmpty()) {
+            customNamesString.split("|").forEach { entry ->
+                val parts = entry.split(":")
+                if (parts.size == 2) {
+                    customAppNames[parts[0]] = parts[1]
+                }
+            }
+        }
+    }
+
+    private fun saveCustomNames() {
+        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val customNamesString = customAppNames.entries.joinToString("|") { "${it.key}:${it.value}" }
+        prefs.edit().putString("custom_app_names", customNamesString).apply()
+    }
+
+    fun setCustomAppName(packageName: String, customName: String) {
+        if (customName.isBlank()) {
+            customAppNames.remove(packageName)
+        } else {
+            customAppNames[packageName] = customName
+        }
+        saveCustomNames()
+
+        // Update the app in allApps list
+        allApps.find { it.packageName == packageName }?.customName = if (customName.isBlank()) null else customName
+
+        // Refresh current view
+        if (isSearchMode) {
+            val currentQuery = searchEditText.text.toString().trim()
+            if (currentQuery.isNotEmpty()) {
+                enterSearchMode(currentQuery)
+            } else {
+                showAllApps()
+            }
+        } else {
+            loadApps()
+        }
+
+        // Update home fragment favorites if this app is a favorite
+        if (favoriteApps.contains(packageName)) {
+            (activity as? MainActivity)?.let { mainActivity ->
+                val homeFragment = mainActivity.supportFragmentManager.fragments
+                    .find { it is HomeFragment } as? HomeFragment
+                homeFragment?.updateFavoriteApps(getFavoriteApps())
+            }
+        }
     }
 
     private fun loadIconsFromDrawables() {
@@ -471,18 +528,39 @@ class AppDrawerFragment : Fragment() {
     }
 
     private fun showAppOptionsDialog(app: AppInfo) {
-        val options = arrayOf("Hide App", "App Info", "Uninstall")
+        val options = arrayOf("Rename", "Hide App", "App Info", "Uninstall")
 
         AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
-            .setTitle(app.name)
+            .setTitle(app.displayName)
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> hideApp(app)
-                    1 -> openAppInfo(app.packageName)
-                    2 -> uninstallApp(app.packageName)
+                    0 -> showRenameDialog(app)
+                    1 -> hideApp(app)
+                    2 -> openAppInfo(app.packageName)
+                    3 -> uninstallApp(app.packageName)
                 }
             }
             .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showRenameDialog(app: AppInfo) {
+        val editText = EditText(requireContext())
+        editText.setText(app.customName ?: app.name)
+        editText.selectAll()
+
+        AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
+            .setTitle("Rename App")
+            .setMessage("Enter a new name for ${app.name}")
+            .setView(editText)
+            .setPositiveButton("Save") { _, _ ->
+                val newName = editText.text.toString().trim()
+                setCustomAppName(app.packageName, newName)
+            }
+            .setNegativeButton("Cancel", null)
+            .setNeutralButton("Reset") { _, _ ->
+                setCustomAppName(app.packageName, "")
+            }
             .show()
     }
 
