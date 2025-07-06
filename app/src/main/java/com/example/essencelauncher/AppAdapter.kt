@@ -26,10 +26,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 
 class AppAdapter(
     private val context: Context,
+    private val fragment: Fragment,
     private var apps: List<AppInfo>,
     private val onFavoriteToggle: (AppInfo) -> Unit,
     private val onAppLongPress: ((AppInfo) -> Unit)? = null
@@ -38,6 +41,7 @@ class AppAdapter(
     class AppViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val starButton: ImageView = view.findViewById(R.id.starButton)
         val appNameText: TextView = view.findViewById(R.id.appNameText)
+        val lockIcon: ImageView = view.findViewById(R.id.lockIcon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder {
@@ -50,11 +54,14 @@ class AppAdapter(
         val app = apps[position]
 
         holder.appNameText.text = app.displayName
-        
+
         // Set star icon based on favorite status
         holder.starButton.setImageResource(
             if (app.isFavorite) R.drawable.ic_star else R.drawable.ic_star_outline
         )
+
+        // Show/hide lock icon based on locked status
+        holder.lockIcon.visibility = if (app.isLocked) View.VISIBLE else View.GONE
         
         // Handle star button click
         holder.starButton.setOnClickListener {
@@ -65,7 +72,11 @@ class AppAdapter(
         
         // Handle app click to launch
         holder.itemView.setOnClickListener {
-            launchApp(app.packageName)
+            if (app.isLocked) {
+                authenticateAndLaunchApp(app)
+            } else {
+                launchApp(app.packageName)
+            }
         }
 
         // Handle app long press for uninstall/info options
@@ -80,6 +91,28 @@ class AppAdapter(
     fun updateApps(newApps: List<AppInfo>) {
         apps = newApps
         notifyDataSetChanged()
+    }
+
+    private fun authenticateAndLaunchApp(app: AppInfo) {
+        if (!BiometricAuthManager.isAuthenticationAvailable(context)) {
+            Toast.makeText(context, "Authentication not available on this device", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authManager = BiometricAuthManager(fragment)
+        authManager.authenticate(app.displayName, object : BiometricAuthManager.AuthCallback {
+            override fun onAuthSuccess() {
+                launchApp(app.packageName)
+            }
+
+            override fun onAuthError(errorMessage: String) {
+                Toast.makeText(context, "Authentication error: $errorMessage", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onAuthFailed() {
+                Toast.makeText(context, "Authentication failed", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun launchApp(packageName: String) {

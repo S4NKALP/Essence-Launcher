@@ -322,10 +322,17 @@ class HomeFragment : Fragment() {
                 .inflate(R.layout.item_favorite_app, favoriteAppsContainer, false)
 
             val favoriteAppName = favoriteView.findViewById<TextView>(R.id.favoriteAppName)
+            val lockIcon = favoriteView.findViewById<ImageView>(R.id.lockIcon)
+
             favoriteAppName.text = app.displayName
+            lockIcon.visibility = if (app.isLocked) View.VISIBLE else View.GONE
 
             favoriteView.setOnClickListener {
-                launchApp(app.packageName)
+                if (app.isLocked) {
+                    authenticateAndLaunchApp(app)
+                } else {
+                    launchApp(app.packageName)
+                }
             }
 
             favoriteView.setOnLongClickListener {
@@ -335,6 +342,28 @@ class HomeFragment : Fragment() {
 
             favoriteAppsContainer.addView(favoriteView)
         }
+    }
+
+    private fun authenticateAndLaunchApp(app: AppInfo) {
+        if (!BiometricAuthManager.isAuthenticationAvailable(requireContext())) {
+            Toast.makeText(requireContext(), "Authentication not available on this device", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authManager = BiometricAuthManager(this)
+        authManager.authenticate(app.displayName, object : BiometricAuthManager.AuthCallback {
+            override fun onAuthSuccess() {
+                launchApp(app.packageName)
+            }
+
+            override fun onAuthError(errorMessage: String) {
+                Toast.makeText(requireContext(), "Authentication error: $errorMessage", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onAuthFailed() {
+                Toast.makeText(requireContext(), "Authentication failed", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun launchApp(packageName: String) {
@@ -350,15 +379,17 @@ class HomeFragment : Fragment() {
     }
 
     private fun showAppOptionsDialog(app: AppInfo) {
-        val options = arrayOf("Rename", "App Info", "Uninstall")
+        val lockOption = if (app.isLocked) "Unlock App" else "Lock App"
+        val options = arrayOf("Rename", lockOption, "App Info", "Uninstall")
 
         AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
             .setTitle(app.displayName)
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> showRenameDialog(app)
-                    1 -> openAppInfo(app.packageName)
-                    2 -> uninstallApp(app.packageName)
+                    1 -> toggleAppLock(app)
+                    2 -> openAppInfo(app.packageName)
+                    3 -> uninstallApp(app.packageName)
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -393,6 +424,50 @@ class HomeFragment : Fragment() {
                 }
             }
             .show()
+    }
+
+    private fun toggleAppLock(app: AppInfo) {
+        if (app.isLocked) {
+            // Unlock the app - require authentication
+            authenticateAndUnlockApp(app)
+        } else {
+            // Lock the app
+            (activity as? MainActivity)?.let { mainActivity ->
+                val appDrawerFragment = mainActivity.supportFragmentManager.fragments
+                    .find { it is AppDrawerFragment } as? AppDrawerFragment
+                appDrawerFragment?.setAppLocked(app.packageName, true)
+
+                Toast.makeText(requireContext(), "${app.displayName} locked", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun authenticateAndUnlockApp(app: AppInfo) {
+        if (!BiometricAuthManager.isAuthenticationAvailable(requireContext())) {
+            Toast.makeText(requireContext(), "Authentication not available on this device", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authManager = BiometricAuthManager(this)
+        authManager.authenticate(app.displayName, "unlock", object : BiometricAuthManager.AuthCallback {
+            override fun onAuthSuccess() {
+                (activity as? MainActivity)?.let { mainActivity ->
+                    val appDrawerFragment = mainActivity.supportFragmentManager.fragments
+                        .find { it is AppDrawerFragment } as? AppDrawerFragment
+                    appDrawerFragment?.setAppLocked(app.packageName, false)
+
+                    Toast.makeText(requireContext(), "${app.displayName} unlocked", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onAuthError(errorMessage: String) {
+                Toast.makeText(requireContext(), "Authentication error: $errorMessage", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onAuthFailed() {
+                Toast.makeText(requireContext(), "Authentication failed", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun openAppInfo(packageName: String) {

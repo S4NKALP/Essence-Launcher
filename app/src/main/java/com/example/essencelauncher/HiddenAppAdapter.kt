@@ -24,17 +24,22 @@ import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 
 class HiddenAppAdapter(
     private val context: Context,
+    private val fragment: Fragment,
     private var apps: List<AppInfo>,
     private val onLongClick: (AppInfo) -> Unit
 ) : RecyclerView.Adapter<HiddenAppAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val appName: TextView = view.findViewById(R.id.appName)
+        val lockIcon: ImageView = view.findViewById(R.id.lockIcon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -47,9 +52,16 @@ class HiddenAppAdapter(
         val app = apps[position]
         holder.appName.text = app.displayName
 
+        // Show/hide lock icon based on locked status
+        holder.lockIcon.visibility = if (app.isLocked) View.VISIBLE else View.GONE
+
         // Set click listener to launch app
         holder.itemView.setOnClickListener {
-            launchApp(app.packageName)
+            if (app.isLocked) {
+                authenticateAndLaunchApp(app)
+            } else {
+                launchApp(app.packageName)
+            }
         }
 
         // Set long click listener for options
@@ -64,6 +76,28 @@ class HiddenAppAdapter(
     fun updateApps(newApps: List<AppInfo>) {
         apps = newApps
         notifyDataSetChanged()
+    }
+
+    private fun authenticateAndLaunchApp(app: AppInfo) {
+        if (!BiometricAuthManager.isAuthenticationAvailable(context)) {
+            Toast.makeText(context, "Authentication not available on this device", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authManager = BiometricAuthManager(fragment)
+        authManager.authenticate(app.displayName, object : BiometricAuthManager.AuthCallback {
+            override fun onAuthSuccess() {
+                launchApp(app.packageName)
+            }
+
+            override fun onAuthError(errorMessage: String) {
+                Toast.makeText(context, "Authentication error: $errorMessage", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onAuthFailed() {
+                Toast.makeText(context, "Authentication failed", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun launchApp(packageName: String) {

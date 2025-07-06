@@ -25,4 +25,13 @@
         android:singleLine="true"
         android:ellipsize="end" />
 
+    <ImageView
+        android:id="@+id/lockIcon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/ic_lock"
+        android:layout_marginStart="8dp"
+        android:contentDescription="Locked app"
+        android:visibility="gone" />
+
 </LinearLayout>

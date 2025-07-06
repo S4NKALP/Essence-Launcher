@@ -62,6 +62,7 @@ class AppDrawerFragment : Fragment() {
     private var favoriteApps = mutableSetOf<String>()
     private var hiddenApps = mutableSetOf<String>()
     private var customAppNames = mutableMapOf<String, String>()
+    private var lockedApps = mutableSetOf<String>()
     private var isSearchMode = false
     private lateinit var gestureDetector: GestureDetector
 
@@ -73,6 +74,7 @@ class AppDrawerFragment : Fragment() {
         loadFavorites()
         loadHiddenApps()
         loadCustomNames()
+        loadLockedApps()
         initViews(view)
         setupRecyclerView()
         setupSearchFunctionality()
@@ -102,12 +104,12 @@ class AppDrawerFragment : Fragment() {
 
     private fun setupRecyclerView() {
         // Setup recent apps adapter (no star buttons)
-        recentAppAdapter = RecentAppAdapter(requireContext(), recentApps) { app ->
+        recentAppAdapter = RecentAppAdapter(requireContext(), this, recentApps) { app ->
             showAppOptionsDialog(app)
         }
 
         // Setup search apps adapter (with star buttons)
-        searchAppAdapter = AppAdapter(requireContext(), emptyList(), { app ->
+        searchAppAdapter = AppAdapter(requireContext(), this, emptyList(), { app ->
             toggleFavorite(app)
         }) { app ->
             showAppOptionsDialog(app)
@@ -184,8 +186,9 @@ class AppDrawerFragment : Fragment() {
                 val installTime = packageInfo.firstInstallTime
                 val isFavorite = favoriteApps.contains(packageName)
                 val customName = customAppNames[packageName]
+                val isLocked = lockedApps.contains(packageName)
 
-                allApps.add(AppInfo(appName, packageName, installTime, isFavorite, customName))
+                allApps.add(AppInfo(appName, packageName, installTime, isFavorite, customName, isLocked))
             } catch (e: Exception) {
                 // Skip apps that can't be queried
             }
@@ -405,6 +408,7 @@ class AppDrawerFragment : Fragment() {
     fun refreshApps() {
         loadHiddenApps()
         loadCustomNames()
+        loadLockedApps()
         loadApps()
     }
 
@@ -438,6 +442,54 @@ class AppDrawerFragment : Fragment() {
 
         // Update the app in allApps list
         allApps.find { it.packageName == packageName }?.customName = if (customName.isBlank()) null else customName
+
+        // Refresh current view
+        if (isSearchMode) {
+            val currentQuery = searchEditText.text.toString().trim()
+            if (currentQuery.isNotEmpty()) {
+                enterSearchMode(currentQuery)
+            } else {
+                showAllApps()
+            }
+        } else {
+            loadApps()
+        }
+
+        // Update home fragment favorites if this app is a favorite
+        if (favoriteApps.contains(packageName)) {
+            (activity as? MainActivity)?.let { mainActivity ->
+                val homeFragment = mainActivity.supportFragmentManager.fragments
+                    .find { it is HomeFragment } as? HomeFragment
+                homeFragment?.updateFavoriteApps(getFavoriteApps())
+            }
+        }
+    }
+
+    private fun loadLockedApps() {
+        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val lockedAppsString = prefs.getString("locked_apps", "") ?: ""
+        lockedApps.clear()
+        if (lockedAppsString.isNotEmpty()) {
+            lockedApps.addAll(lockedAppsString.split(",").filter { it.isNotEmpty() })
+        }
+    }
+
+    private fun saveLockedApps() {
+        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val lockedAppsString = lockedApps.joinToString(",")
+        prefs.edit().putString("locked_apps", lockedAppsString).apply()
+    }
+
+    fun setAppLocked(packageName: String, isLocked: Boolean) {
+        if (isLocked) {
+            lockedApps.add(packageName)
+        } else {
+            lockedApps.remove(packageName)
+        }
+        saveLockedApps()
+
+        // Update the app in allApps list
+        allApps.find { it.packageName == packageName }?.isLocked = isLocked
 
         // Refresh current view
         if (isSearchMode) {
@@ -528,16 +580,18 @@ class AppDrawerFragment : Fragment() {
     }
 
     private fun showAppOptionsDialog(app: AppInfo) {
-        val options = arrayOf("Rename", "Hide App", "App Info", "Uninstall")
+        val lockOption = if (app.isLocked) "Unlock App" else "Lock App"
+        val options = arrayOf("Rename", lockOption, "Hide App", "App Info", "Uninstall")
 
         AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
             .setTitle(app.displayName)
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> showRenameDialog(app)
-                    1 -> hideApp(app)
-                    2 -> openAppInfo(app.packageName)
-                    3 -> uninstallApp(app.packageName)
+                    1 -> toggleAppLock(app)
+                    2 -> hideApp(app)
+                    3 -> openAppInfo(app.packageName)
+                    4 -> uninstallApp(app.packageName)
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -562,6 +616,48 @@ class AppDrawerFragment : Fragment() {
                 setCustomAppName(app.packageName, "")
             }
             .show()
+    }
+
+    private fun toggleAppLock(app: AppInfo) {
+        if (app.isLocked) {
+            // Unlock the app - require authentication
+            authenticateAndUnlockApp(app)
+        } else {
+            // Lock the app
+            setAppLocked(app.packageName, true)
+            android.widget.Toast.makeText(
+                requireContext(),
+                "${app.displayName} locked",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    private fun authenticateAndUnlockApp(app: AppInfo) {
+        if (!BiometricAuthManager.isAuthenticationAvailable(requireContext())) {
+            android.widget.Toast.makeText(requireContext(), "Authentication not available on this device", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authManager = BiometricAuthManager(this)
+        authManager.authenticate(app.displayName, "unlock", object : BiometricAuthManager.AuthCallback {
+            override fun onAuthSuccess() {
+                setAppLocked(app.packageName, false)
+                android.widget.Toast.makeText(
+                    requireContext(),
+                    "${app.displayName} unlocked",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+
+            override fun onAuthError(errorMessage: String) {
+                android.widget.Toast.makeText(requireContext(), "Authentication error: $errorMessage", android.widget.Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onAuthFailed() {
+                android.widget.Toast.makeText(requireContext(), "Authentication failed", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun hideApp(app: AppInfo) {

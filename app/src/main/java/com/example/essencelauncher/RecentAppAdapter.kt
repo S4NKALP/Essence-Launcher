@@ -24,17 +24,22 @@ import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 
 class RecentAppAdapter(
     private val context: Context,
+    private val fragment: Fragment,
     private var apps: List<AppInfo>,
     private val onAppLongPress: ((AppInfo) -> Unit)? = null
 ) : RecyclerView.Adapter<RecentAppAdapter.RecentAppViewHolder>() {
 
     class RecentAppViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val appNameText: TextView = view.findViewById(R.id.appNameText)
+        val lockIcon: ImageView = view.findViewById(R.id.lockIcon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecentAppViewHolder {
@@ -47,10 +52,17 @@ class RecentAppAdapter(
         val app = apps[position]
 
         holder.appNameText.text = app.displayName
+
+        // Show/hide lock icon based on locked status
+        holder.lockIcon.visibility = if (app.isLocked) View.VISIBLE else View.GONE
         
         // Handle app click to launch
         holder.itemView.setOnClickListener {
-            launchApp(app.packageName)
+            if (app.isLocked) {
+                authenticateAndLaunchApp(app)
+            } else {
+                launchApp(app.packageName)
+            }
         }
 
         // Handle app long press for uninstall/info options
@@ -65,6 +77,28 @@ class RecentAppAdapter(
     fun updateApps(newApps: List<AppInfo>) {
         apps = newApps
         notifyDataSetChanged()
+    }
+
+    private fun authenticateAndLaunchApp(app: AppInfo) {
+        if (!BiometricAuthManager.isAuthenticationAvailable(context)) {
+            Toast.makeText(context, "Authentication not available on this device", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authManager = BiometricAuthManager(fragment)
+        authManager.authenticate(app.displayName, object : BiometricAuthManager.AuthCallback {
+            override fun onAuthSuccess() {
+                launchApp(app.packageName)
+            }
+
+            override fun onAuthError(errorMessage: String) {
+                Toast.makeText(context, "Authentication error: $errorMessage", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onAuthFailed() {
+                Toast.makeText(context, "Authentication failed", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun launchApp(packageName: String) {

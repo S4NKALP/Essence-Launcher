@@ -34,6 +34,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -51,6 +52,7 @@ class HiddenAppsFragment : Fragment() {
     private var hiddenApps = mutableListOf<AppInfo>()
     private var hiddenAppPackages = mutableSetOf<String>()
     private var customAppNames = mutableMapOf<String, String>()
+    private var lockedApps = mutableSetOf<String>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -59,6 +61,7 @@ class HiddenAppsFragment : Fragment() {
 
         loadHiddenApps()
         loadCustomNames()
+        loadLockedApps()
         initViews(view)
         setupRecyclerView()
         setupSearchFunctionality()
@@ -78,7 +81,7 @@ class HiddenAppsFragment : Fragment() {
 
     private fun setupRecyclerView() {
         // Setup hidden apps adapter (no star buttons for hidden apps)
-        hiddenAppAdapter = HiddenAppAdapter(requireContext(), emptyList()) { app ->
+        hiddenAppAdapter = HiddenAppAdapter(requireContext(), this, emptyList()) { app ->
             showAppOptionsDialog(app)
         }
 
@@ -119,8 +122,9 @@ class HiddenAppsFragment : Fragment() {
                 val packageInfo = packageManager.getPackageInfo(packageName, 0)
                 val installTime = packageInfo.firstInstallTime
                 val customName = customAppNames[packageName]
+                val isLocked = lockedApps.contains(packageName)
 
-                allApps.add(AppInfo(appName, packageName, installTime, false, customName))
+                allApps.add(AppInfo(appName, packageName, installTime, false, customName, isLocked))
             } catch (e: Exception) {
                 // Skip apps that can't be queried
             }
@@ -221,19 +225,30 @@ class HiddenAppsFragment : Fragment() {
         }
     }
 
+    private fun loadLockedApps() {
+        val prefs = requireContext().getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val lockedAppsString = prefs.getString("locked_apps", "") ?: ""
+        lockedApps.clear()
+        if (lockedAppsString.isNotEmpty()) {
+            lockedApps.addAll(lockedAppsString.split(",").filter { it.isNotEmpty() })
+        }
+    }
+
 
 
     private fun showAppOptionsDialog(app: AppInfo) {
-        val options = arrayOf("Rename", "Unhide", "App Info", "Uninstall")
+        val lockOption = if (app.isLocked) "Unlock App" else "Lock App"
+        val options = arrayOf("Rename", lockOption, "Unhide", "App Info", "Uninstall")
 
         AlertDialog.Builder(requireContext(), R.style.CustomDialogTheme)
             .setTitle(app.displayName)
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> showRenameDialog(app)
-                    1 -> unhideApp(app)
-                    2 -> openAppInfo(app.packageName)
-                    3 -> uninstallApp(app.packageName)
+                    1 -> toggleAppLock(app)
+                    2 -> unhideApp(app)
+                    3 -> openAppInfo(app.packageName)
+                    4 -> uninstallApp(app.packageName)
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -276,6 +291,58 @@ class HiddenAppsFragment : Fragment() {
                 }
             }
             .show()
+    }
+
+    private fun toggleAppLock(app: AppInfo) {
+        if (app.isLocked) {
+            // Unlock the app - require authentication
+            authenticateAndUnlockApp(app)
+        } else {
+            // Lock the app
+            (activity as? MainActivity)?.let { mainActivity ->
+                val appDrawerFragment = mainActivity.supportFragmentManager.fragments
+                    .find { it is AppDrawerFragment } as? AppDrawerFragment
+                appDrawerFragment?.setAppLocked(app.packageName, true)
+
+                // Update the current app in the list
+                app.isLocked = true
+                hiddenAppAdapter.updateApps(hiddenApps)
+
+                android.widget.Toast.makeText(requireContext(), "${app.displayName} locked", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun authenticateAndUnlockApp(app: AppInfo) {
+        if (!BiometricAuthManager.isAuthenticationAvailable(requireContext())) {
+            android.widget.Toast.makeText(requireContext(), "Authentication not available on this device", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authManager = BiometricAuthManager(this)
+        authManager.authenticate(app.displayName, "unlock", object : BiometricAuthManager.AuthCallback {
+            override fun onAuthSuccess() {
+                (activity as? MainActivity)?.let { mainActivity ->
+                    val appDrawerFragment = mainActivity.supportFragmentManager.fragments
+                        .find { it is AppDrawerFragment } as? AppDrawerFragment
+                    appDrawerFragment?.setAppLocked(app.packageName, false)
+
+                    // Update the current app in the list
+                    app.isLocked = false
+                    hiddenAppAdapter.updateApps(hiddenApps)
+
+                    android.widget.Toast.makeText(requireContext(), "${app.displayName} unlocked", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onAuthError(errorMessage: String) {
+                android.widget.Toast.makeText(requireContext(), "Authentication error: $errorMessage", android.widget.Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onAuthFailed() {
+                android.widget.Toast.makeText(requireContext(), "Authentication failed", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun openAppInfo(packageName: String) {
