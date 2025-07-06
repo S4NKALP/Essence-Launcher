@@ -86,6 +86,8 @@ class WallpaperOpacityBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun loadCurrentOpacity() {
+        // Only load actual opacity if show wallpaper is disabled
+        // If show wallpaper is enabled, this bottom sheet shouldn't be accessible
         currentOpacity = WallpaperManager.getWallpaperOpacity(requireContext())
         initialOpacity = currentOpacity
         opacitySeekBar.progress = currentOpacity

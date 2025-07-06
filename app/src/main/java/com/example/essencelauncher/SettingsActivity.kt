@@ -74,10 +74,24 @@ class SettingsActivity : AppCompatActivity() {
             openFontSelection()
         }
 
-        // Wallpaper opacity
-        val currentOpacity = WallpaperManager.getWallpaperOpacity(this)
-        addSettingsItem("Wallpaper Opacity", "Current: ${currentOpacity}%") {
-            showWallpaperOpacityDialog()
+        // Show wallpaper toggle
+        val showWallpaper = WallpaperManager.isShowWallpaperEnabled(this)
+        addToggleSettingsItem("Show Wallpaper", "Display system wallpaper behind launcher", showWallpaper) { isEnabled ->
+            WallpaperManager.setShowWallpaperEnabled(this, isEnabled)
+            // Refresh wallpaper immediately
+            applyWallpaperBackground()
+            // Refresh settings to show/hide opacity option
+            refreshSettingsDisplay()
+            val statusText = if (isEnabled) "enabled" else "disabled"
+            Toast.makeText(this, "Wallpaper display $statusText", Toast.LENGTH_SHORT).show()
+        }
+
+        // Wallpaper opacity (only show if wallpaper is disabled)
+        if (!showWallpaper) {
+            val currentOpacity = WallpaperManager.getWallpaperOpacity(this)
+            addSettingsItem("Wallpaper Opacity", "Current: ${currentOpacity}%") {
+                showWallpaperOpacityDialog()
+            }
         }
 
         // Clear favorites

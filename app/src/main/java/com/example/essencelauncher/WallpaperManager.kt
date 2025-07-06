@@ -33,9 +33,11 @@ object WallpaperManager {
     private const val PREF_WALLPAPER_OPACITY = "wallpaper_opacity"
     private const val PREF_CUSTOM_BACKGROUND_ENABLED = "custom_background_enabled"
     private const val PREF_CUSTOM_BACKGROUND_COLOR = "custom_background_color"
+    private const val PREF_SHOW_WALLPAPER = "show_wallpaper"
+    private const val PREF_SAVED_OPACITY = "saved_opacity"
 
-    // Default transparency is 50% as per user preference
-    private const val DEFAULT_TRANSPARENCY = 50
+    // Default transparency is 20% as per user preference
+    private const val DEFAULT_TRANSPARENCY = 20
 
     /**
      * Apply wallpaper background to a view with optional color overlay.
@@ -45,7 +47,7 @@ object WallpaperManager {
     fun applyWallpaperBackground(context: Context, view: View) {
         val prefs = context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
         val isCustomBackgroundEnabled = prefs.getBoolean(PREF_CUSTOM_BACKGROUND_ENABLED, false)
-        val opacity = prefs.getInt(PREF_WALLPAPER_OPACITY, DEFAULT_TRANSPARENCY)
+        val opacity = getEffectiveWallpaperOpacity(context)
 
         if (isCustomBackgroundEnabled) {
             // Apply custom background color with user-defined opacity
@@ -169,6 +171,69 @@ object WallpaperManager {
             // Make background transparent to show wallpaper with preview opacity
             val overlayColor = getHexForOpacity(previewOpacity)
             view.setBackgroundColor(Color.parseColor(overlayColor))
+        }
+    }
+
+    /**
+     * Check if show wallpaper is enabled.
+     */
+    fun isShowWallpaperEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        return prefs.getBoolean(PREF_SHOW_WALLPAPER, false) // Default to false (hide wallpaper)
+    }
+
+    /**
+     * Set show wallpaper enabled/disabled.
+     * When enabled: saves current opacity and sets to 100% (fully transparent to show wallpaper)
+     * When disabled: restores saved opacity (to hide/dim wallpaper)
+     */
+    fun setShowWallpaperEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+
+        // Initialize saved opacity if it doesn't exist
+        initializeSavedOpacityIfNeeded(context)
+
+        if (enabled) {
+            // Save current opacity before enabling wallpaper display
+            val currentOpacity = prefs.getInt(PREF_WALLPAPER_OPACITY, DEFAULT_TRANSPARENCY)
+            // Only save if it's not already 100% (to preserve user's actual preference)
+            if (currentOpacity != 100) {
+                editor.putInt(PREF_SAVED_OPACITY, currentOpacity)
+            }
+            // Set opacity to 100% (fully transparent to show wallpaper)
+            editor.putInt(PREF_WALLPAPER_OPACITY, 100)
+        } else {
+            // Restore saved opacity when disabling wallpaper display
+            val savedOpacity = prefs.getInt(PREF_SAVED_OPACITY, DEFAULT_TRANSPARENCY)
+            editor.putInt(PREF_WALLPAPER_OPACITY, savedOpacity)
+        }
+
+        editor.putBoolean(PREF_SHOW_WALLPAPER, enabled)
+        editor.apply()
+    }
+
+    /**
+     * Get the effective wallpaper opacity (considering show wallpaper toggle).
+     */
+    fun getEffectiveWallpaperOpacity(context: Context): Int {
+        val prefs = context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        val showWallpaper = prefs.getBoolean(PREF_SHOW_WALLPAPER, false)
+
+        // Always return the current opacity setting from preferences
+        // The setShowWallpaperEnabled method handles setting the opacity to 100% when enabled
+        return prefs.getInt(PREF_WALLPAPER_OPACITY, DEFAULT_TRANSPARENCY)
+    }
+
+    /**
+     * Initialize saved opacity if it doesn't exist.
+     * This ensures we have a fallback when toggling wallpaper for the first time.
+     */
+    private fun initializeSavedOpacityIfNeeded(context: Context) {
+        val prefs = context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
+        if (!prefs.contains(PREF_SAVED_OPACITY)) {
+            val currentOpacity = prefs.getInt(PREF_WALLPAPER_OPACITY, DEFAULT_TRANSPARENCY)
+            prefs.edit().putInt(PREF_SAVED_OPACITY, currentOpacity).apply()
         }
     }
 }
