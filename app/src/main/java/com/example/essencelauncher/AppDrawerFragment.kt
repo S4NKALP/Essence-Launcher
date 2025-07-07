@@ -622,11 +622,14 @@ class AppDrawerFragment : Fragment() {
                 val diffY = e2.y - e1.y
                 val diffX = e2.x - e1.x
 
+                android.util.Log.d("AppDrawerFragment", "Fling detected: diffY=$diffY, diffX=$diffX, velY=$velocityY")
+
                 // Only handle down swipe to close app drawer
                 if (abs(diffY) > abs(diffX)) {
                     if (abs(diffY) > SWIPE_THRESHOLD && abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
                         if (diffY > 0) {
                             // Down swipe - close app drawer
+                            android.util.Log.d("AppDrawerFragment", "Down swipe detected - closing app drawer")
                             closeAppDrawer()
                             return true
                         }
@@ -637,7 +640,9 @@ class AppDrawerFragment : Fragment() {
         })
 
         view.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
+            val handled = gestureDetector.onTouchEvent(event)
+            android.util.Log.d("AppDrawerFragment", "Touch event: ${event.action}, handled: $handled")
+            handled
         }
     }
 

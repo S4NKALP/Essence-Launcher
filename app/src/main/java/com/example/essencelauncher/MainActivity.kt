@@ -153,13 +153,14 @@ class MainActivity : AppCompatActivity() {
 
         // Set up touch listener on the ViewPager2 with multi-touch support
         viewPager.setOnTouchListener { _, event ->
-            handleTouchEvent(event)
-            true // Consume all touch events
+            val handled = handleTouchEvent(event)
+            // Only consume touch events if we handled them or if app drawer/hidden apps are not visible
+            handled || (appDrawerContainer.visibility != View.VISIBLE && hiddenAppsContainer.visibility != View.VISIBLE)
         }
     }
 
     private fun handleTouchEvent(event: MotionEvent): Boolean {
-        // Only handle gestures when not in app drawer or hidden apps
+        // When app drawer or hidden apps are visible, let them handle their own gestures
         if (appDrawerContainer.visibility == View.VISIBLE || hiddenAppsContainer.visibility == View.VISIBLE) {
             return false
         }
