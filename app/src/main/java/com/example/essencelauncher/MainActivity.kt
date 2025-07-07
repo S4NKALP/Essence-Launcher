@@ -298,8 +298,7 @@ class MainActivity : AppCompatActivity() {
             // Set proper soft input mode for keyboard handling
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
-            // Apply wallpaper background to app drawer container immediately
-            WallpaperManager.applyWallpaperBackground(this, appDrawerContainer)
+            // Don't apply wallpaper to container - let AppDrawerFragment handle it
 
             // Hide ViewPager and show app drawer
             viewPager.visibility = View.GONE
@@ -369,8 +368,7 @@ class MainActivity : AppCompatActivity() {
     private fun openHiddenAppsAfterAuth() {
         Log.d("MainActivity", "openHiddenAppsAfterAuth called")
         try {
-            // Apply wallpaper background to hidden apps container immediately
-            WallpaperManager.applyWallpaperBackground(this, hiddenAppsContainer)
+            // Don't apply wallpaper to container - let HiddenAppsFragment handle it
 
             // Hide ViewPager and show hidden apps
             viewPager.visibility = View.GONE
@@ -426,15 +424,7 @@ class MainActivity : AppCompatActivity() {
         val mainContainer = findViewById<FrameLayout>(R.id.mainContainer)
         WallpaperManager.applyWallpaperBackgroundWithOpacity(this, mainContainer, previewOpacity)
 
-        // Apply wallpaper with preview opacity to app drawer container if visible
-        if (appDrawerContainer.visibility == View.VISIBLE) {
-            WallpaperManager.applyWallpaperBackgroundWithOpacity(this, appDrawerContainer, previewOpacity)
-        }
-
-        // Apply wallpaper with preview opacity to hidden apps container if visible
-        if (hiddenAppsContainer.visibility == View.VISIBLE) {
-            WallpaperManager.applyWallpaperBackgroundWithOpacity(this, hiddenAppsContainer, previewOpacity)
-        }
+        // Don't apply wallpaper to app drawer or hidden apps containers - let fragments handle it
 
         // Only preview wallpaper on standalone fragments (AppDrawer and HiddenApps)
         // ViewPager fragments (Home, Left, Right) get wallpaper from main container

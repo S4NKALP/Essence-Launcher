@@ -59,8 +59,7 @@ class HiddenAppsFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_hidden_apps, container, false)
 
-        // Apply wallpaper background immediately to prevent flash
-        applyWallpaperBackground(view)
+        // Don't apply wallpaper background - inherit from main container
 
         loadHiddenApps()
         loadCustomNames()
@@ -251,9 +250,8 @@ class HiddenAppsFragment : Fragment() {
     }
 
     fun refreshWallpaper() {
-        // Refresh wallpaper background on the root view
-        view?.let { applyWallpaperBackground(it) }
-        // Refresh text colors based on new wallpaper opacity
+        // Don't refresh wallpaper background - inherit from main container
+        // Just refresh text colors based on new wallpaper opacity
         refreshTextColors()
     }
 
@@ -325,17 +323,13 @@ class HiddenAppsFragment : Fragment() {
     }
 
     fun previewWallpaperOpacity(previewOpacity: Int) {
-        // Apply wallpaper with preview opacity on the root view
-        view?.let { v ->
-            val rootView = v.findViewById<LinearLayout>(R.id.hiddenAppsRoot)
-            WallpaperManager.applyWallpaperBackgroundWithOpacity(requireContext(), rootView, previewOpacity)
-        }
+        // Don't apply wallpaper preview - inherit from main container
+        // The MainActivity handles applying preview to the main container
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh wallpaper background when fragment becomes visible
-        view?.let { applyWallpaperBackground(it) }
+        // Don't refresh wallpaper background - inherit from main container
     }
 
     private fun showAppOptionsDialog(app: AppInfo) {
