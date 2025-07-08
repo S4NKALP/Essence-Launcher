@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <color name="splash_background">@color/OffWhite</color>
-    <color name="ic_launcher_background" tools:ignore="UnusedResources">#004C4C</color>
+    <color name="ic_launcher_background" tools:ignore="UnusedResources">#008080</color>
     <color name="Teal1" tools:ignore="UnusedResources">#B2D8D8</color>
     <color name="Teal2" tools:ignore="UnusedResources">#66B2B2</color>
     <color name="Teal3" tools:ignore="UnusedResources">#008080</color>
