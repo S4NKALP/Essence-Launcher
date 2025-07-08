@@ -14,6 +14,7 @@ import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -96,6 +97,7 @@ import com.github.essencelauncher.ui.theme.refreshTheme
 import com.github.essencelauncher.ui.theme.transparentHalf
 import com.github.essencelauncher.utils.AppUtils
 import com.github.essencelauncher.utils.AppUtils.loadTextFromAssets
+import com.github.essencelauncher.utils.BiometricAuthenticationHelper
 import com.github.essencelauncher.utils.changeAppsAlignment
 import com.github.essencelauncher.utils.managers.ItemAlignmentManager
 
@@ -359,7 +361,30 @@ fun MainSettingsPage(
         SettingsNavigationItem(
             label = stringResource(id = R.string.manage_hidden_apps),
             false,
-            onClick = { navController.navigate("hiddenApps") })
+            onClick = {
+                // Require authentication before accessing hidden apps
+                if (activity is FragmentActivity) {
+                    val biometricHelper = BiometricAuthenticationHelper(activity)
+                    biometricHelper.authenticateForHiddenApps(
+                        object : BiometricAuthenticationHelper.AuthenticationCallback {
+                            override fun onAuthenticationSucceeded() {
+                                navController.navigate("hiddenApps")
+                            }
+
+                            override fun onAuthenticationFailed() {
+                                // Authentication failed, do nothing
+                            }
+
+                            override fun onAuthenticationError(errorCode: Int, errorMessage: String) {
+                                // Authentication error, do nothing
+                            }
+                        }
+                    )
+                } else {
+                    // Fallback if not FragmentActivity (shouldn't happen)
+                    navController.navigate("hiddenApps")
+                }
+            })
 
 
 

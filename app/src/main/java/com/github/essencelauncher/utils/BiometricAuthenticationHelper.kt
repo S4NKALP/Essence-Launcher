@@ -113,4 +113,15 @@ class BiometricAuthenticationHelper(private val activity: FragmentActivity) {
         val subtitle = activity.getString(R.string.authenticate_to_unlock, appName)
         authenticate(title, subtitle, callback)
     }
+
+    /**
+     * Convenience method to authenticate for accessing hidden apps
+     */
+    fun authenticateForHiddenApps(
+        callback: AuthenticationCallback
+    ) {
+        val title = activity.getString(R.string.authentication_required)
+        val subtitle = activity.getString(R.string.authenticate_to_access_hidden_apps)
+        authenticate(title, subtitle, callback)
+    }
 }

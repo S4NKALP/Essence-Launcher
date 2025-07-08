@@ -99,6 +99,7 @@
     <!-- App Lock strings -->
     <string name="authenticate_to_open">Authenticate to open %1$s</string>
     <string name="authenticate_to_unlock">Authenticate to unlock %1$s</string>
+    <string name="authenticate_to_access_hidden_apps">Authenticate to access hidden apps</string>
     <string name="authentication_required">Authentication Required</string>
     <string name="authentication_failed">Authentication failed</string>
     <string name="authentication_error">Authentication error: %1$s</string>
