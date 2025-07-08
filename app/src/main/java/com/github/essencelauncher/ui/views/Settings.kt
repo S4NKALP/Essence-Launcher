@@ -445,6 +445,17 @@ fun PersonalizationOptions(
             })
 
         SettingsSwitch(
+            label = stringResource(id = R.string.show_battery), checked = getBooleanSetting(
+                mainAppModel.getContext(), stringResource(R.string.ShowBattery), true
+            ), onCheckedChange = {
+                toggleBooleanSetting(
+                    mainAppModel.getContext(),
+                    it,
+                    mainAppModel.getContext().resources.getString(R.string.ShowBattery)
+                )
+            })
+
+        SettingsSwitch(
             label = stringResource(id = R.string.use_24_hour_format),
             checked = getBooleanSetting(
                 mainAppModel.getContext(), stringResource(R.string.Use24HourFormat), false
@@ -603,6 +614,52 @@ fun AlignmentOptions(mainAppModel: MainAppViewModel, context: Context, goBack: (
                             selectedClockIndex = index
                             mainAppModel.itemAlignmentManager.setClockAlignment(selectedClockIndex)
                         }, selected = index == selectedClockIndex
+                    ) {
+                        Text(label)
+                    }
+                }
+            }
+        }
+
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(0.dp, 15.dp)
+        ) {
+            Text(
+                stringResource(R.string.battery_alignment),
+                Modifier
+                    .padding(0.dp, 5.dp)
+                    .align(Alignment.CenterHorizontally),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+
+            var selectedBatteryIndex by remember {
+                mutableIntStateOf(
+                    mainAppModel.itemAlignmentManager.getBatteryAlignment()
+                )
+            }
+            val batteryOptions = listOf(
+                stringResource(R.string.left),
+                stringResource(R.string.center),
+                stringResource(R.string.right)
+            )
+            SingleChoiceSegmentedButtonRow(
+                Modifier
+                    .padding(0.dp, 0.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .width(275.dp)
+            ) {
+                batteryOptions.forEachIndexed { index, label ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index, count = batteryOptions.size
+                        ), onClick = {
+                            selectedBatteryIndex = index
+                            mainAppModel.itemAlignmentManager.setBatteryAlignment(selectedBatteryIndex)
+                        }, selected = index == selectedBatteryIndex
                     ) {
                         Text(label)
                     }

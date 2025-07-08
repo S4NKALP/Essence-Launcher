@@ -16,6 +16,7 @@ class ItemAlignmentManager(context: Context) {
     companion object {
         private const val PREFS_NAME = "ItemAlignmentPrefs"
         private const val CLOCK_ALIGNMENT_KEY = "ClockAlignment"
+        private const val BATTERY_ALIGNMENT_KEY = "BatteryAlignment"
         private const val FAVORITE_APPS_ALIGNMENT_KEY = "FavoriteAppsAlignment"
         private const val BOTTOM_DOCK_ALIGNMENT_KEY = "BottomDockAlignment"
 
@@ -48,6 +49,33 @@ class ItemAlignmentManager(context: Context) {
      */
     fun getClockAlignmentAsHorizontal(): Alignment.Horizontal {
         return when (getClockAlignment()) {
+            ALIGNMENT_LEFT -> Alignment.Start
+            ALIGNMENT_RIGHT -> Alignment.End
+            else -> Alignment.CenterHorizontally
+        }
+    }
+
+    /**
+     * Set battery alignment
+     */
+    fun setBatteryAlignment(alignment: Int) {
+        sharedPreferences.edit {
+            putInt(BATTERY_ALIGNMENT_KEY, alignment)
+        }
+    }
+
+    /**
+     * Get battery alignment
+     */
+    fun getBatteryAlignment(): Int {
+        return sharedPreferences.getInt(BATTERY_ALIGNMENT_KEY, ALIGNMENT_CENTER)
+    }
+
+    /**
+     * Get battery alignment as Alignment.Horizontal
+     */
+    fun getBatteryAlignmentAsHorizontal(): Alignment.Horizontal {
+        return when (getBatteryAlignment()) {
             ALIGNMENT_LEFT -> Alignment.Start
             ALIGNMENT_RIGHT -> Alignment.End
             else -> Alignment.CenterHorizontally
@@ -114,6 +142,7 @@ class ItemAlignmentManager(context: Context) {
     fun clearAllAlignments() {
         sharedPreferences.edit {
             remove(CLOCK_ALIGNMENT_KEY)
+            remove(BATTERY_ALIGNMENT_KEY)
             remove(FAVORITE_APPS_ALIGNMENT_KEY)
             remove(BOTTOM_DOCK_ALIGNMENT_KEY)
         }

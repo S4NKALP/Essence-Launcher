@@ -33,6 +33,7 @@
     <string name="widget">Widget</string>
     <string name="remove_widget">Remove Widget</string>
     <string name="alignments">Alignments</string>
+    <string name="battery_alignment">Battery Alignment</string>
     <string name="choose_font">Choose Font</string>
     <string name="select_widget">Select Widget</string>
 
@@ -41,6 +42,7 @@
     <string name="auto_open">Quick search</string>
     <string name="offset">Offset</string>
     <string name="show_clock">Show Clock</string>
+    <string name="show_battery">Show Battery</string>
     <string name="height">Height</string>
     <string name="width">Width</string>
     <string name="home">Home</string>

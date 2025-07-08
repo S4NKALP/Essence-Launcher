@@ -10,6 +10,8 @@
     <string name="ShowSearchBox" translatable="false">showSearchBox</string>
     <string name="SearchAutoOpen" translatable="false">searchAutoOpen</string>
     <string name="ShowClock" translatable="false">ShowClock</string>
+    <string name="ShowBattery" translatable="false">ShowBattery</string>
+    <string name="BatteryAlignment" translatable="false">BatteryAlignment</string>
     <string name="Font" translatable="false">font</string>
     <string name="FirstTime" translatable="false">FirstTime</string>
     <string name="FirstTimeAppDrawHelp" translatable="false">FirstTimeAppDrawHelp</string>

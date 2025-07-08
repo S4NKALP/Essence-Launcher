@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 
 import androidx.compose.ui.unit.dp
 import com.github.essencelauncher.R
+import com.github.essencelauncher.ui.components.BatteryIndicator
 import com.github.essencelauncher.utils.AppUtils
 
 
@@ -98,6 +99,23 @@ fun HomeScreen(
             }
         }
 
+        // Battery indicator - positioned independently
+        if (getBooleanSetting(
+                mainAppModel.getContext(), stringResource(R.string.ShowBattery), true
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(top = calculateBatteryTopPadding(mainAppModel.getContext()))
+            ) {
+                BatteryIndicator(
+                    itemAlignmentManager = mainAppModel.itemAlignmentManager
+                )
+            }
+        }
+
         // Favorite apps at center
         LazyColumn(
             state = scrollState,
@@ -105,7 +123,7 @@ fun HomeScreen(
             horizontalAlignment = mainAppModel.itemAlignmentManager.getFavoriteAppsAlignmentAsHorizontal(),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = if (getBooleanSetting(mainAppModel.getContext(), stringResource(R.string.ShowClock), true)) 180.dp else 90.dp)
+                .padding(top = calculateTopPadding(mainAppModel.getContext()))
         ) {
         // Clock is now positioned separately at the top
 
@@ -354,5 +372,30 @@ fun BottomDock(
                 }
             }
         }
+    }
+}
+
+/**
+ * Calculate top padding for the battery indicator based on clock visibility
+ */
+@Composable
+private fun calculateBatteryTopPadding(context: Context): androidx.compose.ui.unit.Dp {
+    val showClock = getBooleanSetting(context, stringResource(R.string.ShowClock), true)
+    return if (showClock) 150.dp else 90.dp // Position below clock if shown, otherwise at top
+}
+
+/**
+ * Calculate top padding for the favorite apps list based on what indicators are shown
+ */
+@Composable
+private fun calculateTopPadding(context: Context): androidx.compose.ui.unit.Dp {
+    val showClock = getBooleanSetting(context, stringResource(R.string.ShowClock), true)
+    val showBattery = getBooleanSetting(context, stringResource(R.string.ShowBattery), true)
+
+    return when {
+        showClock && showBattery -> 200.dp // Both clock and battery
+        showClock -> 180.dp // Only clock
+        showBattery -> 140.dp // Only battery
+        else -> 90.dp // Neither
     }
 }
