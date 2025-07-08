@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Essence Launcher</string>
+    <string name="settings_pref_file_name" translatable="false">SettingsPref</string>
+    <string name="app_version" translatable="false">v1.0.0</string>
+</resources>
