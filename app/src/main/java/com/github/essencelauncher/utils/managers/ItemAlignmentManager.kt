@@ -17,7 +17,8 @@ class ItemAlignmentManager(context: Context) {
         private const val PREFS_NAME = "ItemAlignmentPrefs"
         private const val CLOCK_ALIGNMENT_KEY = "ClockAlignment"
         private const val FAVORITE_APPS_ALIGNMENT_KEY = "FavoriteAppsAlignment"
-        
+        private const val BOTTOM_DOCK_ALIGNMENT_KEY = "BottomDockAlignment"
+
         // Alignment constants
         const val ALIGNMENT_LEFT = 0
         const val ALIGNMENT_CENTER = 1
@@ -81,12 +82,40 @@ class ItemAlignmentManager(context: Context) {
     }
 
     /**
+     * Set bottom dock alignment
+     */
+    fun setBottomDockAlignment(alignment: Int) {
+        sharedPreferences.edit {
+            putInt(BOTTOM_DOCK_ALIGNMENT_KEY, alignment)
+        }
+    }
+
+    /**
+     * Get bottom dock alignment
+     */
+    fun getBottomDockAlignment(): Int {
+        return sharedPreferences.getInt(BOTTOM_DOCK_ALIGNMENT_KEY, ALIGNMENT_CENTER)
+    }
+
+    /**
+     * Get bottom dock alignment as Alignment.Horizontal
+     */
+    fun getBottomDockAlignmentAsHorizontal(): Alignment.Horizontal {
+        return when (getBottomDockAlignment()) {
+            ALIGNMENT_LEFT -> Alignment.Start
+            ALIGNMENT_RIGHT -> Alignment.End
+            else -> Alignment.CenterHorizontally
+        }
+    }
+
+    /**
      * Clear all alignment settings
      */
     fun clearAllAlignments() {
         sharedPreferences.edit {
             remove(CLOCK_ALIGNMENT_KEY)
             remove(FAVORITE_APPS_ALIGNMENT_KEY)
+            remove(BOTTOM_DOCK_ALIGNMENT_KEY)
         }
     }
 }

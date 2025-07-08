@@ -257,6 +257,80 @@ object AppUtils{
     }
 
     /**
+     * Opens the default phone/dialer app
+     *
+     * @param context Context needed to start the activity
+     */
+    fun openPhoneApp(context: Context) {
+        try {
+            val intent = Intent(Intent.ACTION_DIAL).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // Fallback: try to open any available dialer app
+            try {
+                val intent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val packageManager = context.packageManager
+                val dialerApps = packageManager.queryIntentActivities(intent, 0)
+                    .filter { it.activityInfo.packageName.contains("dialer", ignoreCase = true) ||
+                             it.activityInfo.packageName.contains("phone", ignoreCase = true) }
+
+                if (dialerApps.isNotEmpty()) {
+                    val dialerIntent = Intent().apply {
+                        setClassName(dialerApps[0].activityInfo.packageName, dialerApps[0].activityInfo.name)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(dialerIntent)
+                }
+            } catch (e: Exception) {
+                // If all else fails, do nothing
+            }
+        }
+    }
+
+    /**
+     * Opens the default messaging app
+     *
+     * @param context Context needed to start the activity
+     */
+    fun openMessagingApp(context: Context) {
+        try {
+            val intent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_APP_MESSAGING)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // Fallback: try to open any available messaging app
+            try {
+                val intent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val packageManager = context.packageManager
+                val messagingApps = packageManager.queryIntentActivities(intent, 0)
+                    .filter { it.activityInfo.packageName.contains("mms", ignoreCase = true) ||
+                             it.activityInfo.packageName.contains("messaging", ignoreCase = true) ||
+                             it.activityInfo.packageName.contains("sms", ignoreCase = true) }
+
+                if (messagingApps.isNotEmpty()) {
+                    val messagingIntent = Intent().apply {
+                        setClassName(messagingApps[0].activityInfo.packageName, messagingApps[0].activityInfo.name)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(messagingIntent)
+                }
+            } catch (e: Exception) {
+                // If all else fails, do nothing
+            }
+        }
+    }
+
+    /**
      * Reset home screen for when app is closed
      */
     fun resetHome(homeScreenModel: HomeScreenModel, shouldGoToFirstPage: Boolean? = true) {

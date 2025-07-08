@@ -221,7 +221,8 @@ fun HomeScreenPageManager(
 
             1 -> HomeScreen(
                 mainAppModel = mainAppModel,
-                homeScreenModel = homeScreenModel
+                homeScreenModel = homeScreenModel,
+                onOpenSettings = onOpenSettings
             )
 
             2 -> AppsList(

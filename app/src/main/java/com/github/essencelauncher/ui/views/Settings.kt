@@ -664,6 +664,52 @@ fun AlignmentOptions(mainAppModel: MainAppViewModel, context: Context, goBack: (
                 .padding(0.dp, 15.dp)
         ) {
             Text(
+                "Bottom Dock Alignment",
+                Modifier
+                    .padding(0.dp, 5.dp)
+                    .align(Alignment.CenterHorizontally),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+
+            var selectedBottomDockIndex by remember {
+                mutableIntStateOf(
+                    mainAppModel.itemAlignmentManager.getBottomDockAlignment()
+                )
+            }
+            val bottomDockOptions = listOf(
+                stringResource(R.string.left),
+                stringResource(R.string.center),
+                stringResource(R.string.right)
+            )
+            SingleChoiceSegmentedButtonRow(
+                Modifier
+                    .padding(0.dp, 0.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .width(275.dp)
+            ) {
+                bottomDockOptions.forEachIndexed { index, label ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index, count = bottomDockOptions.size
+                        ), onClick = {
+                            selectedBottomDockIndex = index
+                            mainAppModel.itemAlignmentManager.setBottomDockAlignment(selectedBottomDockIndex)
+                        }, selected = index == selectedBottomDockIndex
+                    ) {
+                        Text(label)
+                    }
+                }
+            }
+        }
+
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(0.dp, 15.dp)
+        ) {
+            Text(
                 stringResource(id = R.string.apps),
                 Modifier
                     .padding(0.dp, 5.dp)

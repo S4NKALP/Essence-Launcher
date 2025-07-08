@@ -17,11 +17,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +54,8 @@ import com.github.essencelauncher.utils.AppUtils
 import com.github.essencelauncher.utils.AppUtils.getCurrentTime
 import com.github.essencelauncher.utils.AppUtils.getCurrentDate
 import com.github.essencelauncher.utils.AppUtils.resetHome
+import com.github.essencelauncher.utils.AppUtils.openPhoneApp
+import com.github.essencelauncher.utils.AppUtils.openMessagingApp
 import com.github.essencelauncher.utils.managers.ItemAlignmentManager
 import com.github.essencelauncher.utils.getBooleanSetting
 
@@ -61,7 +69,9 @@ import com.github.essencelauncher.MainAppViewModel as MainAppModel
  */
 @Composable
 fun HomeScreen(
-    mainAppModel: MainAppModel, homeScreenModel: HomeScreenModel
+    mainAppModel: MainAppModel,
+    homeScreenModel: HomeScreenModel,
+    onOpenSettings: () -> Unit
 ) {
     val scrollState = rememberLazyListState()
 
@@ -146,6 +156,16 @@ fun HomeScreen(
         }
 
         }
+
+        // Bottom dock with phone, message, and settings icons
+        BottomDock(
+            context = mainAppModel.getContext(),
+            itemAlignmentManager = mainAppModel.itemAlignmentManager,
+            onOpenSettings = onOpenSettings,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 30.dp)
+        )
     }
 }
 
@@ -257,6 +277,81 @@ fun FirstTimeHelp(context: Context) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     style = MaterialTheme.typography.bodyMedium
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Bottom dock with phone, message, and settings icons
+ */
+@Composable
+fun BottomDock(
+    context: Context,
+    itemAlignmentManager: ItemAlignmentManager,
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dockAlignment = itemAlignmentManager.getBottomDockAlignmentAsHorizontal()
+
+    Box(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Surface(
+            modifier = Modifier.align(
+                when (dockAlignment) {
+                    Alignment.Start -> Alignment.BottomStart
+                    Alignment.End -> Alignment.BottomEnd
+                    else -> Alignment.BottomCenter
+                }
+            ),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shadowElevation = 8.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Phone icon
+                IconButton(
+                    onClick = { openPhoneApp(context) },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = "Phone",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                // Message icon
+                IconButton(
+                    onClick = { openMessagingApp(context) },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Email,
+                        contentDescription = "Messages",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                // Settings icon
+                IconButton(
+                    onClick = onOpenSettings,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }

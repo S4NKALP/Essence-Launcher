@@ -242,6 +242,7 @@ fun WidgetsDashboard(context: Context, mainAppModel: MainAppViewModel) {
                 Text(
                     text = "Widget Settings",
                     style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
@@ -272,7 +273,11 @@ fun WidgetsDashboard(context: Context, mainAppModel: MainAppViewModel) {
                         selectedWidgetConfig = null
                         showWidgetBottomSheet = false
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 ) {
                     Text("Remove Widget")
                 }
@@ -289,11 +294,16 @@ fun WidgetsDashboard(context: Context, mainAppModel: MainAppViewModel) {
                 ) {
                     Text(
                         text = "Offset: ${tempOffset.toInt()}",
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
                     Button(
                         onClick = { tempOffset = 0f },
-                        modifier = Modifier.padding(start = 8.dp)
+                        modifier = Modifier.padding(start = 8.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
                     ) {
                         Text("Reset")
                     }
@@ -316,11 +326,16 @@ fun WidgetsDashboard(context: Context, mainAppModel: MainAppViewModel) {
                 ) {
                     Text(
                         text = "Width: ${tempWidth.toInt()}",
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
                     Button(
                         onClick = { tempWidth = 250f },
-                        modifier = Modifier.padding(start = 8.dp)
+                        modifier = Modifier.padding(start = 8.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
                     ) {
                         Text("Reset")
                     }
@@ -343,11 +358,16 @@ fun WidgetsDashboard(context: Context, mainAppModel: MainAppViewModel) {
                 ) {
                     Text(
                         text = "Height: ${tempHeight.toInt()}",
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
                     Button(
                         onClick = { tempHeight = 125f },
-                        modifier = Modifier.padding(start = 8.dp)
+                        modifier = Modifier.padding(start = 8.dp),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
                     ) {
                         Text("Reset")
                     }
@@ -379,7 +399,11 @@ fun WidgetsDashboard(context: Context, mainAppModel: MainAppViewModel) {
                         }
                         showWidgetBottomSheet = false
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 ) {
                     Text("Apply Changes")
                 }
@@ -462,7 +486,9 @@ fun WidgetsDashboard(context: Context, mainAppModel: MainAppViewModel) {
             onClick = { showWidgetPicker = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .padding(16.dp),
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add Widget")
         }
