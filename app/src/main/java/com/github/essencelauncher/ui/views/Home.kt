@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import com.github.essencelauncher.R
 import com.github.essencelauncher.ui.components.BatteryIndicator
 import com.github.essencelauncher.utils.AppUtils
@@ -82,7 +83,8 @@ import com.github.essencelauncher.MainAppViewModel as MainAppModel
 fun HomeScreen(
     mainAppModel: MainAppModel,
     homeScreenModel: HomeScreenModel,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    activity: FragmentActivity
 ) {
     val scrollState = rememberLazyListState()
 
@@ -143,6 +145,9 @@ fun HomeScreen(
 
         //Apps
         items(homeScreenModel.favoriteApps) { app ->
+            // Read the locked apps version to trigger recomposition when it changes
+            val lockedAppsVersion by homeScreenModel.lockedAppsVersion
+
             HomeScreenItem(
                 appName = app.displayName,
                 screenTime = 0L,
@@ -152,7 +157,8 @@ fun HomeScreen(
                     AppUtils.openApp(
                         app = app,
                         mainAppModel = mainAppModel,
-                        homeScreenModel = homeScreenModel
+                        homeScreenModel = homeScreenModel,
+                        activity = activity
                     )
 
                     resetHome(homeScreenModel)
@@ -163,7 +169,8 @@ fun HomeScreen(
                 },
                 showScreenTime = false,
                 modifier = Modifier,
-                alignment = mainAppModel.itemAlignmentManager.getFavoriteAppsAlignmentAsHorizontal()
+                alignment = mainAppModel.itemAlignmentManager.getFavoriteAppsAlignmentAsHorizontal(),
+                isLocked = mainAppModel.lockedAppsManager.isAppLocked(app.packageName)
             )
         }
 

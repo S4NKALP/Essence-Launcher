@@ -27,6 +27,7 @@ import android.view.animation.Animation
 import android.view.animation.AnimationSet
 import android.view.animation.ScaleAnimation
 import androidx.compose.runtime.MutableState
+import androidx.fragment.app.FragmentActivity
 
 import androidx.core.graphics.createBitmap
 
@@ -70,10 +71,49 @@ object AppUtils{
      * @param app The app info being opened
      * @param mainAppModel Main view model, needed for package manager, context
      * @param homeScreenModel Home screen model for updating selected app
+     * @param activity FragmentActivity needed for biometric authentication
      *
      * @author George Clensy
      */
     fun openApp(
+        app: InstalledApp,
+        mainAppModel: MainAppModel,
+        homeScreenModel: HomeScreenModel,
+        activity: FragmentActivity? = null
+    ) {
+        // Check if app is locked and requires authentication
+        if (mainAppModel.lockedAppsManager.isAppLocked(app.packageName)) {
+            if (activity != null) {
+                val biometricHelper = BiometricAuthenticationHelper(activity)
+                biometricHelper.authenticateForApp(
+                    app.displayName,
+                    object : BiometricAuthenticationHelper.AuthenticationCallback {
+                        override fun onAuthenticationSucceeded() {
+                            // Authentication successful, open the app
+                            launchApp(app, mainAppModel, homeScreenModel)
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            // Authentication failed, do nothing or show message
+                        }
+
+                        override fun onAuthenticationError(errorCode: Int, errorMessage: String) {
+                            // Authentication error, do nothing or show message
+                        }
+                    }
+                )
+            }
+            return
+        }
+
+        // App is not locked, open directly
+        launchApp(app, mainAppModel, homeScreenModel)
+    }
+
+    /**
+     * Internal function to actually launch the app
+     */
+    private fun launchApp(
         app: InstalledApp,
         mainAppModel: MainAppModel,
         homeScreenModel: HomeScreenModel

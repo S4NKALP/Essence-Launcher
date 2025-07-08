@@ -73,6 +73,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import com.github.essencelauncher.R
 import com.github.essencelauncher.utils.AppUtils
 
@@ -97,7 +98,7 @@ import com.github.essencelauncher.utils.isPrivateSpaceUnlocked as isPrivateSpace
  */
 @Composable
 fun AppsList(
-    mainAppModel: MainAppModel, homeScreenModel: HomeScreenModel
+    mainAppModel: MainAppModel, homeScreenModel: HomeScreenModel, activity: FragmentActivity
 ) {
 
 
@@ -160,7 +161,8 @@ fun AppsList(
                                 AppUtils.openApp(
                                     app = appInfo,
                                     mainAppModel = mainAppModel,
-                                    homeScreenModel = homeScreenModel
+                                    homeScreenModel = homeScreenModel,
+                                    activity = activity
                                 )
 
                                 resetHome(homeScreenModel)
@@ -188,7 +190,8 @@ fun AppsList(
                                 AppUtils.openApp(
                                     app = firstAppInfo,
                                     mainAppModel = mainAppModel,
-                                    homeScreenModel = homeScreenModel
+                                    homeScreenModel = homeScreenModel,
+                                    activity = activity
                                 )
 
                                 resetHome(homeScreenModel)
@@ -221,6 +224,9 @@ fun AppsList(
                         app.packageName
                     )
                 ) {
+                    // Read the locked apps version to trigger recomposition when it changes
+                    val lockedAppsVersion by homeScreenModel.lockedAppsVersion
+
                     HomeScreenItem(
                         appName = app.displayName,
                         screenTime = 0L,
@@ -230,7 +236,8 @@ fun AppsList(
                             AppUtils.openApp(
                                 app = app,
                                 mainAppModel = mainAppModel,
-                                homeScreenModel = homeScreenModel
+                                homeScreenModel = homeScreenModel,
+                                activity = activity
                             )
 
                             resetHome(homeScreenModel)
@@ -241,7 +248,8 @@ fun AppsList(
                         },
                         showScreenTime = false,
                         modifier = Modifier,
-                        alignment = getAppsAlignment(mainAppModel.getContext())
+                        alignment = getAppsAlignment(mainAppModel.getContext()),
+                        isLocked = mainAppModel.lockedAppsManager.isAppLocked(app.packageName)
                     )
                 }
             }

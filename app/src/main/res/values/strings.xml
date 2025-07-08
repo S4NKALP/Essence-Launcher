@@ -11,6 +11,8 @@
     <string name="rem_from_fav">Remove From Favourites</string>
 
     <string name="app_info">App Info</string>
+    <string name="lock_app">Lock App</string>
+    <string name="unlock_app">Unlock App</string>
     <string name="search">Search</string>
     <string name="unlock_private_space">Unlock Private Space</string>
     <string name="lock_private_space">Lock Private Space</string>
@@ -93,4 +95,13 @@
     <string name="light_green">Light Green</string>
     <string name="dark_green">Dark Green</string>
     <string name="off_white">Off white</string>
+
+    <!-- App Lock strings -->
+    <string name="authenticate_to_open">Authenticate to open %1$s</string>
+    <string name="authenticate_to_unlock">Authenticate to unlock %1$s</string>
+    <string name="authentication_required">Authentication Required</string>
+    <string name="authentication_failed">Authentication failed</string>
+    <string name="authentication_error">Authentication error: %1$s</string>
+    <string name="biometric_not_available">Biometric authentication not available</string>
+    <string name="app_locked">App is locked</string>
 </resources>

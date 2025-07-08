@@ -28,6 +28,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -74,6 +75,7 @@ import com.github.essencelauncher.utils.getIntSetting
 import com.github.essencelauncher.utils.managers.FavoriteAppsManager
 import com.github.essencelauncher.utils.managers.HiddenAppsManager
 import com.github.essencelauncher.utils.managers.ItemAlignmentManager
+import com.github.essencelauncher.utils.managers.LockedAppsManager
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -95,6 +97,8 @@ class MainAppViewModel(application: Application) : AndroidViewModel(application)
 
     val hiddenAppsManager: HiddenAppsManager = HiddenAppsManager(application) // Hidden apps manager
 
+    val lockedAppsManager: LockedAppsManager = LockedAppsManager(application) // Locked apps manager
+
     val itemAlignmentManager: ItemAlignmentManager = ItemAlignmentManager(application) // Item alignment manager
 
 
@@ -112,7 +116,7 @@ class MainAppViewModel(application: Application) : AndroidViewModel(application)
 
 }
 
-class MainHomeScreen : ComponentActivity() {
+class MainHomeScreen : FragmentActivity() {
     private lateinit var privateSpaceReceiver: PrivateSpaceStateReceiver
     private lateinit var packageChangeReceiver: BroadcastReceiver
 
@@ -376,8 +380,10 @@ class MainHomeScreen : ComponentActivity() {
                     exitTransition = { ExitTransition.None }) {
                     HomeScreenPageManager(
                         viewModel,
-                        homeScreenModel
-                    ) { navController.navigate("settings") }
+                        homeScreenModel,
+                        { navController.navigate("settings") },
+                        this@MainHomeScreen
+                    )
                 }
                 composable(
                     "settings",

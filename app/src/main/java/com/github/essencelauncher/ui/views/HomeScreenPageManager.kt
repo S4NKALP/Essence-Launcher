@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -43,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +59,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -66,6 +69,7 @@ import com.github.essencelauncher.R
 import com.github.essencelauncher.ui.theme.EssenceTheme
 import com.github.essencelauncher.ui.theme.offLightScheme
 import com.github.essencelauncher.utils.AppUtils
+import com.github.essencelauncher.utils.BiometricAuthenticationHelper
 
 
 import com.github.essencelauncher.utils.AppUtils.resetHome
@@ -87,6 +91,7 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
     @Suppress("MemberVisibilityCanBePrivate")
     var isCurrentAppHidden = mutableStateOf(false)
     var isCurrentAppFavorite = mutableStateOf(false)
+    var isCurrentAppLocked = mutableStateOf(false)
     var showBottomSheet = mutableStateOf(false)
     var showPrivateSpaceSettings = mutableStateOf(false)
 
@@ -98,6 +103,10 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
 
     val installedApps = mutableStateListOf<InstalledApp>()
     val favoriteApps = mutableStateListOf<InstalledApp>()
+
+    // Reactive state to trigger recomposition when locked apps change
+    private val _lockedAppsVersion = mutableStateOf(0)
+    val lockedAppsVersion: State<Int> = _lockedAppsVersion
 
     val appsListScrollState = LazyListState()
     val pagerState = PagerState(1, 0f) { 3 }
@@ -146,6 +155,14 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
         currentSelectedApp.value = app
         isCurrentAppFavorite.value = favoriteApps.contains(app)
         isCurrentAppHidden.value = mainAppViewModel.hiddenAppsManager.isAppHidden(app.packageName)
+        isCurrentAppLocked.value = mainAppViewModel.lockedAppsManager.isAppLocked(app.packageName)
+    }
+
+    /**
+     * Trigger recomposition when locked apps state changes
+     */
+    fun notifyLockedAppsChanged() {
+        _lockedAppsVersion.value += 1
     }
 }
 
@@ -174,7 +191,8 @@ class HomeScreenModelFactory(
 fun HomeScreenPageManager(
     mainAppModel: MainAppModel,
     homeScreenModel: HomeScreenModel,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    activity: FragmentActivity
 ) {
 
     val focusManager = LocalFocusManager.current
@@ -232,12 +250,14 @@ fun HomeScreenPageManager(
             1 -> HomeScreen(
                 mainAppModel = mainAppModel,
                 homeScreenModel = homeScreenModel,
-                onOpenSettings = onOpenSettings
+                onOpenSettings = onOpenSettings,
+                activity = activity
             )
 
             2 -> AppsList(
                 mainAppModel = mainAppModel,
-                homeScreenModel = homeScreenModel
+                homeScreenModel = homeScreenModel,
+                activity = activity
             )
         }
     }
@@ -293,6 +313,44 @@ fun HomeScreenPageManager(
                 }
             ),
             AppAction(
+                label = stringResource(if (homeScreenModel.isCurrentAppLocked.value) R.string.unlock_app else R.string.lock_app),
+                onClick = {
+                    if (homeScreenModel.isCurrentAppLocked.value) {
+                        // Unlock app - requires authentication
+                        val biometricHelper = BiometricAuthenticationHelper(activity)
+                        biometricHelper.authenticateForUnlock(
+                            homeScreenModel.currentSelectedApp.value.displayName,
+                            object : BiometricAuthenticationHelper.AuthenticationCallback {
+                                override fun onAuthenticationSucceeded() {
+                                    mainAppModel.lockedAppsManager.removeLockedApp(
+                                        homeScreenModel.currentSelectedApp.value.packageName
+                                    )
+                                    homeScreenModel.isCurrentAppLocked.value = false
+                                    homeScreenModel.showBottomSheet.value = false
+                                    homeScreenModel.notifyLockedAppsChanged()
+                                }
+
+                                override fun onAuthenticationFailed() {
+                                    // Authentication failed, keep the sheet open
+                                }
+
+                                override fun onAuthenticationError(errorCode: Int, errorMessage: String) {
+                                    // Authentication error, keep the sheet open
+                                }
+                            }
+                        )
+                    } else {
+                        // Lock app - no authentication needed
+                        mainAppModel.lockedAppsManager.addLockedApp(
+                            homeScreenModel.currentSelectedApp.value.packageName
+                        )
+                        homeScreenModel.isCurrentAppLocked.value = true
+                        homeScreenModel.showBottomSheet.value = false
+                        homeScreenModel.notifyLockedAppsChanged()
+                    }
+                }
+            ),
+            AppAction(
                 label = stringResource(id = R.string.app_info),
                 onClick = {
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -335,7 +393,8 @@ fun HomeScreenItem(
     onAppClick: () -> Unit,
     onAppLongClick: () -> Unit,
     showScreenTime: Boolean = false,
-    alignment: Alignment.Horizontal = Alignment.CenterHorizontally
+    alignment: Alignment.Horizontal = Alignment.CenterHorizontally,
+    isLocked: Boolean = false
 ) {
     Row(
         verticalAlignment = Alignment.Bottom,
@@ -358,7 +417,17 @@ fun HomeScreenItem(
             style = MaterialTheme.typography.bodyMedium
         )
 
-
+        // Lock icon if app is locked
+        if (isLocked) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = "Locked",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                modifier = Modifier
+                    .size(16.dp)
+                    .padding(start = 4.dp)
+            )
+        }
     }
 }
 

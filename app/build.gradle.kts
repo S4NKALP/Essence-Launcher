@@ -114,6 +114,9 @@ dependencies {
     // JSON Parsing
     implementation(libs.gson)
 
+    // Biometric Authentication
+    implementation(libs.androidx.biometric)
+
     // Testing Libraries
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

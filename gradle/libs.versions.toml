@@ -23,6 +23,7 @@ roomKtx = "2.7.1"
 roomRuntime = "2.7.1"
 workRuntimeKtx = "2.10.1"
 uiTextGoogleFonts = "1.8.2"
+biometric = "1.1.0"
 
 
 [libraries]
@@ -53,6 +54,7 @@ androidx-compose-material = { group = "androidx.wear.compose", name = "compose-m
 androidx-room-common = { group = "androidx.room", name = "room-common", version.ref = "roomCommon" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
 androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
+androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 
 
 [plugins]
