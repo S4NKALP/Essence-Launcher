@@ -224,9 +224,6 @@ fun AppsList(
                         app.packageName
                     )
                 ) {
-                    // Read the locked apps version to trigger recomposition when it changes
-                    val lockedAppsVersion by homeScreenModel.lockedAppsVersion
-
                     HomeScreenItem(
                         appName = app.displayName,
                         screenTime = 0L,
@@ -249,7 +246,7 @@ fun AppsList(
                         showScreenTime = false,
                         modifier = Modifier,
                         alignment = getAppsAlignment(mainAppModel.getContext()),
-                        isLocked = mainAppModel.lockedAppsManager.isAppLocked(app.packageName)
+                        isLocked = homeScreenModel.lockedApps.contains(app.packageName)
                     )
                 }
             }

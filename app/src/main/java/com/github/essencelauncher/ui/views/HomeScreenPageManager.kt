@@ -44,7 +44,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,9 +103,8 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
     val installedApps = mutableStateListOf<InstalledApp>()
     val favoriteApps = mutableStateListOf<InstalledApp>()
 
-    // Reactive state to trigger recomposition when locked apps change
-    private val _lockedAppsVersion = mutableStateOf(0)
-    val lockedAppsVersion: State<Int> = _lockedAppsVersion
+    // Reactive state to track locked apps for immediate UI updates
+    val lockedApps = mutableStateListOf<String>()
 
     val appsListScrollState = LazyListState()
     val pagerState = PagerState(1, 0f) { 3 }
@@ -118,6 +116,7 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
     init {
         loadApps()
         reloadFavouriteApps()
+        loadLockedApps()
     }
 
     fun loadApps() {
@@ -158,11 +157,19 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
         isCurrentAppLocked.value = mainAppViewModel.lockedAppsManager.isAppLocked(app.packageName)
     }
 
+    fun loadLockedApps() {
+        coroutineScope.launch {
+            val currentLockedApps = mainAppViewModel.lockedAppsManager.getLockedApps()
+            lockedApps.clear()
+            lockedApps.addAll(currentLockedApps)
+        }
+    }
+
     /**
-     * Trigger recomposition when locked apps state changes
+     * Update locked apps state for immediate UI updates
      */
-    fun notifyLockedAppsChanged() {
-        _lockedAppsVersion.value += 1
+    fun updateLockedApps() {
+        loadLockedApps()
     }
 }
 
@@ -327,7 +334,7 @@ fun HomeScreenPageManager(
                                     )
                                     homeScreenModel.isCurrentAppLocked.value = false
                                     homeScreenModel.showBottomSheet.value = false
-                                    homeScreenModel.notifyLockedAppsChanged()
+                                    homeScreenModel.updateLockedApps()
                                 }
 
                                 override fun onAuthenticationFailed() {
@@ -346,7 +353,7 @@ fun HomeScreenPageManager(
                         )
                         homeScreenModel.isCurrentAppLocked.value = true
                         homeScreenModel.showBottomSheet.value = false
-                        homeScreenModel.notifyLockedAppsChanged()
+                        homeScreenModel.updateLockedApps()
                     }
                 }
             ),

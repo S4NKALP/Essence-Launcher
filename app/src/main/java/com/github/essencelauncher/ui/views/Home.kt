@@ -145,9 +145,6 @@ fun HomeScreen(
 
         //Apps
         items(homeScreenModel.favoriteApps) { app ->
-            // Read the locked apps version to trigger recomposition when it changes
-            val lockedAppsVersion by homeScreenModel.lockedAppsVersion
-
             HomeScreenItem(
                 appName = app.displayName,
                 screenTime = 0L,
@@ -170,7 +167,7 @@ fun HomeScreen(
                 showScreenTime = false,
                 modifier = Modifier,
                 alignment = mainAppModel.itemAlignmentManager.getFavoriteAppsAlignmentAsHorizontal(),
-                isLocked = mainAppModel.lockedAppsManager.isAppLocked(app.packageName)
+                isLocked = homeScreenModel.lockedApps.contains(app.packageName)
             )
         }
 
