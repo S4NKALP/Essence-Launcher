@@ -1,3 +1,13 @@
+/*
+ * Portions of this file are from George Clensy
+ * Copyright (c) 2025 George Clensy
+ *
+ * Modifications Copyright (c) 2025 Sankalp Tharu
+ *
+ * Licensed under the MIT License.
+ * See the LICENSE file in this project for details.
+ */
+
 package com.github.essencelauncher.ui.views
 
 import android.content.Context
@@ -381,7 +391,7 @@ fun BottomDock(
 @Composable
 private fun calculateBatteryTopPadding(context: Context): androidx.compose.ui.unit.Dp {
     val showClock = getBooleanSetting(context, stringResource(R.string.ShowClock), true)
-    return if (showClock) 150.dp else 90.dp // Position below clock if shown, otherwise at top
+    return if (showClock) 185.dp else 90.dp // Position below clock and date if shown, otherwise at top
 }
 
 /**
@@ -393,7 +403,7 @@ private fun calculateTopPadding(context: Context): androidx.compose.ui.unit.Dp {
     val showBattery = getBooleanSetting(context, stringResource(R.string.ShowBattery), true)
 
     return when {
-        showClock && showBattery -> 200.dp // Both clock and battery
+        showClock && showBattery -> 220.dp // Both clock and battery (battery below date)
         showClock -> 180.dp // Only clock
         showBattery -> 140.dp // Only battery
         else -> 90.dp // Neither

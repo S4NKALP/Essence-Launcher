@@ -1,3 +1,13 @@
+/*
+ * Portions of this file are from George Clensy
+ * Copyright (c) 2025 George Clensy
+ *
+ * Modifications Copyright (c) 2025 Sankalp Tharu
+ *
+ * Licensed under the MIT License.
+ * See the LICENSE file in this project for details.
+ */
+
 package com.github.essencelauncher.utils
 
 import android.appwidget.AppWidgetHost

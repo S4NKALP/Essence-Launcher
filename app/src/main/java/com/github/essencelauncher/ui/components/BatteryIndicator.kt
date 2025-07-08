@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2025 Your Name
+ *
+ * Licensed under the MIT License.
+ * See the LICENSE file in the project root for license information.
+ */
+
+
 package com.github.essencelauncher.ui.components
 
 import android.content.BroadcastReceiver
