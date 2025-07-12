@@ -226,7 +226,6 @@ fun AppsList(
                 ) {
                     HomeScreenItem(
                         appName = app.displayName,
-                        screenTime = 0L,
                         onAppClick = {
                             homeScreenModel.updateSelectedApp(app)
 
@@ -243,7 +242,6 @@ fun AppsList(
                             homeScreenModel.showBottomSheet.value = true
                             homeScreenModel.updateSelectedApp(app)
                         },
-                        showScreenTime = false,
                         modifier = Modifier,
                         alignment = getAppsAlignment(mainAppModel.getContext()),
                         isLocked = homeScreenModel.lockedApps.contains(app.packageName)

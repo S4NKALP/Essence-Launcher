@@ -147,7 +147,6 @@ fun HomeScreen(
         items(homeScreenModel.favoriteApps) { app ->
             HomeScreenItem(
                 appName = app.displayName,
-                screenTime = 0L,
                 onAppClick = {
                     homeScreenModel.updateSelectedApp(app)
 
@@ -164,7 +163,6 @@ fun HomeScreen(
                     homeScreenModel.showBottomSheet.value = true
                     homeScreenModel.updateSelectedApp(app)
                 },
-                showScreenTime = false,
                 modifier = Modifier,
                 alignment = mainAppModel.itemAlignmentManager.getFavoriteAppsAlignmentAsHorizontal(),
                 isLocked = homeScreenModel.lockedApps.contains(app.packageName)

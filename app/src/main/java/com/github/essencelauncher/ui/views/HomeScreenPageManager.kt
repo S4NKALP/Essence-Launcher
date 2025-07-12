@@ -592,18 +592,14 @@ fun HomeScreenPageManager(
 
 /**
  * An item displayed on the HomeScreen or Apps list
- *
- * If [showScreenTime] is enabled and [screenTime] is not null the screen time is written next to the app name.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreenItem(
     modifier: Modifier = Modifier,
     appName: String,
-    screenTime: Long? = null,
     onAppClick: () -> Unit,
     onAppLongClick: () -> Unit,
-    showScreenTime: Boolean = false,
     alignment: Alignment.Horizontal = Alignment.CenterHorizontally,
     isLocked: Boolean = false
 ) {
@@ -649,10 +645,10 @@ fun HomeScreeItemPrev(){
         HomeScreenItem(
             modifier = Modifier,
             appName = "App Name",
-            screenTime = 1000,
             onAppClick = {},
             onAppLongClick = {},
-            showScreenTime = false
+            alignment = Alignment.CenterHorizontally,
+            isLocked = false
         )
     }
 }
