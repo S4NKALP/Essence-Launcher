@@ -386,7 +386,7 @@ object AppUtils{
     fun resetHome(homeScreenModel: HomeScreenModel, shouldGoToFirstPage: Boolean? = true) {
         homeScreenModel.coroutineScope.launch {
             if (shouldGoToFirstPage == true) {
-                homeScreenModel.pagerState.scrollToPage(1)
+                homeScreenModel.goToPage(1) // Go to home page (1)
                 homeScreenModel.appsListScrollState.scrollToItem(0)
             }
             homeScreenModel.searchExpanded.value = false

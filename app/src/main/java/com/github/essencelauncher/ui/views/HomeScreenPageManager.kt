@@ -29,8 +29,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
@@ -49,7 +47,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-
 import androidx.compose.ui.platform.LocalFocusManager
 
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -80,6 +77,22 @@ import kotlinx.coroutines.launch
 import com.github.essencelauncher.MainAppViewModel as MainAppModel
 
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+
 /**
  * Home Screen View Model
  */
@@ -107,7 +120,10 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
     val lockedApps = mutableStateListOf<String>()
 
     val appsListScrollState = LazyListState()
-    val pagerState = PagerState(1, 0f) { 3 }
+    
+    // Replace PagerState with custom page management
+    var currentPage by mutableIntStateOf(1) // Start at home page (1)
+    val pageCount = 3
 
     val currentSelectedPrivateApp =
         mutableStateOf(InstalledApp("", "", ComponentName("", ""))) //Only used for the bottom sheet
@@ -171,6 +187,33 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
     fun updateLockedApps() {
         loadLockedApps()
     }
+
+    /**
+     * Navigate to next page
+     */
+    fun nextPage() {
+        if (currentPage < pageCount - 1) {
+            currentPage++
+        }
+    }
+
+    /**
+     * Navigate to previous page
+     */
+    fun previousPage() {
+        if (currentPage > 0) {
+            currentPage--
+        }
+    }
+
+    /**
+     * Navigate to specific page
+     */
+    fun goToPage(page: Int) {
+        if (page in 0 until pageCount) {
+            currentPage = page
+        }
+    }
 }
 
 class HomeScreenModelFactory(
@@ -187,8 +230,192 @@ class HomeScreenModelFactory(
 }
 
 /**
+ * Custom Pager using GestureManager
+ */
+@Composable
+fun CustomPager(
+    homeScreenModel: HomeScreenModel,
+    mainAppModel: MainAppModel,
+    onOpenSettings: () -> Unit,
+    activity: FragmentActivity
+) {
+    val context = LocalContext.current
+    var isDragging by remember { mutableStateOf(false) }
+    var dragStartX by remember { mutableStateOf(0f) }
+    var lastDragTime by remember { mutableStateOf(0L) }
+    var lastDragX by remember { mutableStateOf(0f) }
+    var lastPageChangeTime by remember { mutableStateOf(0L) }
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        isDragging = true
+                        dragStartX = offset.x
+                        lastDragX = offset.x
+                        lastDragTime = System.currentTimeMillis()
+                    },
+                    onDragEnd = {
+                        isDragging = false
+                    },
+                    onDragCancel = {
+                        isDragging = false
+                    },
+                    onDrag = { change, _ ->
+                        val currentTime = System.currentTimeMillis()
+                        val currentX = change.position.x
+                        
+                        // Prevent rapid page changes
+                        if (currentTime - lastPageChangeTime < 300) {
+                            change.consume()
+                            return@detectDragGestures
+                        }
+                        
+                        // Calculate velocity during drag
+                        if (currentTime > lastDragTime) {
+                            val timeDelta = currentTime - lastDragTime
+                            val distanceDelta = currentX - lastDragX
+                            val velocity = distanceDelta / timeDelta * 1000f
+                            
+                            // Check if we should trigger page change during drag
+                            if (kotlin.math.abs(velocity) > 800f && kotlin.math.abs(currentX - dragStartX) > 100f) {
+                                val currentPage = homeScreenModel.currentPage
+                                
+                                if (velocity > 0) {
+                                    // Swipe right - go to previous page
+                                    when (currentPage) {
+                                        2 -> homeScreenModel.goToPage(1) // Apps -> Home
+                                        1 -> homeScreenModel.goToPage(0) // Home -> Widgets
+                                        0 -> { /* Already at first page */ }
+                                    }
+                                } else {
+                                    // Swipe left - go to next page
+                                    when (currentPage) {
+                                        0 -> homeScreenModel.goToPage(1) // Widgets -> Home
+                                        1 -> homeScreenModel.goToPage(2) // Home -> Apps
+                                        2 -> { /* Already at last page */ }
+                                    }
+                                }
+                                
+                                lastPageChangeTime = currentTime
+                                isDragging = false
+                            }
+                        }
+                        
+                        lastDragTime = currentTime
+                        lastDragX = currentX
+                        change.consume()
+                    }
+                )
+            }
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    val up = waitForUpOrCancellation()
+                    
+                    if (up != null && !isDragging) {
+                        val currentTime = System.currentTimeMillis()
+                        
+                        // Prevent rapid page changes
+                        if (currentTime - lastPageChangeTime < 300) {
+                            return@awaitEachGesture
+                        }
+                        
+                        val deltaX = up.position.x - down.position.x
+                        val deltaY = up.position.y - down.position.y
+                        val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
+                        
+                        // Calculate velocity (simplified)
+                        val duration = up.uptimeMillis - down.uptimeMillis
+                        val velocityX = if (duration > 0) deltaX / duration * 1000 else 0f
+                        
+                        // HorizontalPager-like swipe detection
+                        val isHorizontalSwipe = kotlin.math.abs(deltaX) > kotlin.math.abs(deltaY)
+                        val hasMinimumDistance = kotlin.math.abs(deltaX) > 50f // Lower threshold like HorizontalPager
+                        val hasMinimumVelocity = kotlin.math.abs(velocityX) > 300f // Velocity threshold
+                        val isIntentionalSwipe = distance > 80f // Minimum total distance
+                        
+                        if (isHorizontalSwipe && hasMinimumDistance && (hasMinimumVelocity || isIntentionalSwipe)) {
+                            val currentPage = homeScreenModel.currentPage
+                            
+                            if (deltaX > 0) {
+                                // Swipe right - go to previous page
+                                when (currentPage) {
+                                    2 -> homeScreenModel.goToPage(1) // Apps -> Home
+                                    1 -> homeScreenModel.goToPage(0) // Home -> Widgets
+                                    0 -> { /* Already at first page */ }
+                                }
+                            } else {
+                                // Swipe left - go to next page
+                                when (currentPage) {
+                                    0 -> homeScreenModel.goToPage(1) // Widgets -> Home
+                                    1 -> homeScreenModel.goToPage(2) // Home -> Apps
+                                    2 -> { /* Already at last page */ }
+                                }
+                            }
+                            
+                            lastPageChangeTime = currentTime
+                        }
+                    }
+                }
+            }
+    ) {
+        // Render current page content with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            when (homeScreenModel.currentPage) {
+                0 -> WidgetsDashboard(
+                    context = mainAppModel.getContext(),
+                    mainAppModel = mainAppModel
+                )
+
+                1 -> HomeScreen(
+                    mainAppModel = mainAppModel,
+                    homeScreenModel = homeScreenModel,
+                    onOpenSettings = onOpenSettings,
+                    activity = activity
+                )
+
+                2 -> AppsList(
+                    mainAppModel = mainAppModel,
+                    homeScreenModel = homeScreenModel,
+                    activity = activity
+                )
+            }
+        }
+
+        // Page indicator (for debugging/testing)
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 50.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            repeat(homeScreenModel.pageCount) { index ->
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(
+                            color = if (index == homeScreenModel.currentPage) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            shape = CircleShape
+                        )
+                )
+            }
+        }
+    }
+}
+
+/**
  *  Main composable for home screen:
- *  contains a pager with all the pages inside of it, contains bottom sheet
+ *  contains a custom pager with all the pages inside of it, contains bottom sheet
  */
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -206,8 +433,8 @@ fun HomeScreenPageManager(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     // Add effect to hide keyboard on page change
-    LaunchedEffect(homeScreenModel.pagerState.currentPage) {
-        if (homeScreenModel.pagerState.currentPage != 2) {
+    LaunchedEffect(homeScreenModel.currentPage) {
+        if (homeScreenModel.currentPage != 2) {
             focusManager.clearFocus()
             keyboardController?.hide()
             homeScreenModel.searchText.value = ""
@@ -216,21 +443,18 @@ fun HomeScreenPageManager(
     }
 
     // Track if user has interacted (swiped) - hide first time help on first swipe
-    LaunchedEffect(homeScreenModel.pagerState.isScrollInProgress) {
-        if (homeScreenModel.pagerState.isScrollInProgress) {
-            // Hide first time help when user starts swiping
-            setBooleanSetting(
-                mainAppModel.getContext(),
-                mainAppModel.getContext().resources.getString(R.string.FirstTimeAppDrawHelp),
-                false
-            )
-        }
+    LaunchedEffect(homeScreenModel.currentPage) {
+        // Hide first time help when user changes pages
+        setBooleanSetting(
+            mainAppModel.getContext(),
+            mainAppModel.getContext().resources.getString(R.string.FirstTimeAppDrawHelp),
+            false
+        )
     }
 
-    // Home Screen Pages
-    HorizontalPager(
-        state = homeScreenModel.pagerState,
-        Modifier
+    // Custom Pager with GestureManager
+    Box(
+        modifier = Modifier
             .fillMaxSize()
             .combinedClickable(
                 onClick = {}, onLongClickLabel = {}.toString(),
@@ -245,28 +469,13 @@ fun HomeScreenPageManager(
                 },
                 indication = null, interactionSource = homeScreenModel.interactionSource
             )
-    ) { page ->
-
-
-        when (page) {
-            0 -> WidgetsDashboard(
-                context = mainAppModel.getContext(),
-                mainAppModel = mainAppModel
-            )
-
-            1 -> HomeScreen(
-                mainAppModel = mainAppModel,
-                homeScreenModel = homeScreenModel,
-                onOpenSettings = onOpenSettings,
-                activity = activity
-            )
-
-            2 -> AppsList(
-                mainAppModel = mainAppModel,
-                homeScreenModel = homeScreenModel,
-                activity = activity
-            )
-        }
+    ) {
+        CustomPager(
+            homeScreenModel = homeScreenModel,
+            mainAppModel = mainAppModel,
+            onOpenSettings = onOpenSettings,
+            activity = activity
+        )
     }
 
     //Bottom Sheet
@@ -300,7 +509,7 @@ fun HomeScreenPageManager(
                             homeScreenModel.isCurrentAppFavorite.value = true
                             homeScreenModel.showBottomSheet.value = false
                             homeScreenModel.coroutineScope.launch {
-                                homeScreenModel.pagerState.scrollToPage(1)
+                                homeScreenModel.goToPage(1) // Go to home page
                             }
                         } else {
                             // Limit reached - could show a toast or just close the sheet
@@ -372,9 +581,6 @@ fun HomeScreenPageManager(
             )
         )
 
-
-
-
         HomeScreenBottomSheet(
             title = homeScreenModel.currentSelectedApp.value.displayName,
             actions = actions,
@@ -382,8 +588,6 @@ fun HomeScreenPageManager(
             sheetState = rememberModalBottomSheetState()
         )
     }
-
-
 }
 
 /**
@@ -513,3 +717,5 @@ fun HomeScreenBottomSheet(
         }
     }
 }
+
+

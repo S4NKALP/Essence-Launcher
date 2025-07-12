@@ -357,6 +357,22 @@ fun setBooleanSetting(context: Context, setting: String, value: Boolean) {
     }
 }
 
+fun getFloatSetting(context: Context, setting: String, defaultValue: Float): Float {
+    val sharedPreferences = context.getSharedPreferences(
+        R.string.settings_pref_file_name.toString(), Context.MODE_PRIVATE
+    )
+    return sharedPreferences.getFloat(setting, defaultValue)
+}
+
+fun setFloatSetting(context: Context, setting: String, value: Float) {
+    val sharedPreferences = context.getSharedPreferences(
+        R.string.settings_pref_file_name.toString(), Context.MODE_PRIVATE
+    )
+    sharedPreferences.edit {
+        putFloat(setting, value)
+    }
+}
+
 fun resetActivity(context: Context, activity: Activity) {
     val intent = Intent(context, MainHomeScreen::class.java).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
