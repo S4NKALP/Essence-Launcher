@@ -12,8 +12,10 @@ package com.github.essencelauncher.ui.views
 
 import android.app.Application
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -311,6 +313,7 @@ fun CustomPager(
     val context = LocalContext.current
     var isDragging by remember { mutableStateOf(false) }
     var dragStartX by remember { mutableStateOf(0f) }
+    var dragStartY by remember { mutableStateOf(0f) }
     var lastDragTime by remember { mutableStateOf(0L) }
     var lastDragX by remember { mutableStateOf(0f) }
     var lastPageChangeTime by remember { mutableStateOf(0L) }
@@ -323,10 +326,12 @@ fun CustomPager(
                     onDragStart = { offset ->
                         isDragging = true
                         dragStartX = offset.x
+                        dragStartY = offset.y
                         lastDragX = offset.x
                         lastDragTime = System.currentTimeMillis()
                     },
                     onDragEnd = {
+                        // Check for swipe down gesture on drag end
                         isDragging = false
                     },
                     onDragCancel = {
@@ -335,23 +340,42 @@ fun CustomPager(
                     onDrag = { change, _ ->
                         val currentTime = System.currentTimeMillis()
                         val currentX = change.position.x
-                        
+                        val currentY = change.position.y
+
                         // Prevent rapid page changes
                         if (currentTime - lastPageChangeTime < 300) {
                             change.consume()
                             return@detectDragGestures
                         }
-                        
-                        // Calculate velocity during drag
-                        if (currentTime > lastDragTime) {
+
+                        // Calculate deltas from start position
+                        val deltaX = currentX - dragStartX
+                        val deltaY = currentY - dragStartY
+
+                        // Determine if this is primarily a vertical or horizontal gesture
+                        val isVerticalGesture = kotlin.math.abs(deltaY) > kotlin.math.abs(deltaX)
+                        val isHorizontalGesture = kotlin.math.abs(deltaX) > kotlin.math.abs(deltaY)
+
+                        // Check for swipe down gesture (vertical)
+                        if (isVerticalGesture && deltaY > 100f) {
+                            // Swipe down detected - open notification panel
+                            expandNotificationPanel(context)
+                            lastPageChangeTime = currentTime
+                            isDragging = false
+                            change.consume()
+                            return@detectDragGestures
+                        }
+
+                        // Handle horizontal gestures for page navigation
+                        if (isHorizontalGesture && currentTime > lastDragTime) {
                             val timeDelta = currentTime - lastDragTime
                             val distanceDelta = currentX - lastDragX
                             val velocity = distanceDelta / timeDelta * 1000f
-                            
+
                             // Check if we should trigger page change during drag
-                            if (kotlin.math.abs(velocity) > 800f && kotlin.math.abs(currentX - dragStartX) > 100f) {
+                            if (kotlin.math.abs(velocity) > 800f && kotlin.math.abs(deltaX) > 100f) {
                                 val currentPage = homeScreenModel.currentPage
-                                
+
                                 if (velocity > 0) {
                                     // Swipe right - go to previous page
                                     when (currentPage) {
@@ -367,12 +391,12 @@ fun CustomPager(
                                         2 -> { /* Already at last page */ }
                                     }
                                 }
-                                
+
                                 lastPageChangeTime = currentTime
                                 isDragging = false
                             }
                         }
-                        
+
                         lastDragTime = currentTime
                         lastDragX = currentX
                         change.consume()
@@ -383,49 +407,69 @@ fun CustomPager(
                 awaitEachGesture {
                     val down = awaitFirstDown()
                     val up = waitForUpOrCancellation()
-                    
+
                     if (up != null && !isDragging) {
                         val currentTime = System.currentTimeMillis()
-                        
+
                         // Prevent rapid page changes
                         if (currentTime - lastPageChangeTime < 300) {
                             return@awaitEachGesture
                         }
-                        
+
                         val deltaX = up.position.x - down.position.x
                         val deltaY = up.position.y - down.position.y
                         val distance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
-                        
+
                         // Calculate velocity (simplified)
                         val duration = up.uptimeMillis - down.uptimeMillis
                         val velocityX = if (duration > 0) deltaX / duration * 1000 else 0f
-                        
-                        // HorizontalPager-like swipe detection
+                        val velocityY = if (duration > 0) deltaY / duration * 1000 else 0f
+
+                        // Determine if this is a horizontal or vertical swipe
                         val isHorizontalSwipe = kotlin.math.abs(deltaX) > kotlin.math.abs(deltaY)
-                        val hasMinimumDistance = kotlin.math.abs(deltaX) > 50f // Lower threshold like HorizontalPager
-                        val hasMinimumVelocity = kotlin.math.abs(velocityX) > 300f // Velocity threshold
-                        val isIntentionalSwipe = distance > 80f // Minimum total distance
-                        
-                        if (isHorizontalSwipe && hasMinimumDistance && (hasMinimumVelocity || isIntentionalSwipe)) {
-                            val currentPage = homeScreenModel.currentPage
-                            
-                            if (deltaX > 0) {
-                                // Swipe right - go to previous page
-                                when (currentPage) {
-                                    2 -> homeScreenModel.goToPage(1) // Apps -> Home
-                                    1 -> homeScreenModel.goToPage(0) // Home -> Widgets
-                                    0 -> { /* Already at first page */ }
-                                }
-                            } else {
-                                // Swipe left - go to next page
-                                when (currentPage) {
-                                    0 -> homeScreenModel.goToPage(1) // Widgets -> Home
-                                    1 -> homeScreenModel.goToPage(2) // Home -> Apps
-                                    2 -> { /* Already at last page */ }
-                                }
+                        val isVerticalSwipe = kotlin.math.abs(deltaY) > kotlin.math.abs(deltaX)
+
+                        // Handle vertical swipes (swipe down for notification panel)
+                        if (isVerticalSwipe && deltaY > 0) {
+                            val hasMinimumVerticalDistance = kotlin.math.abs(deltaY) > 100f
+                            val hasMinimumVerticalVelocity = kotlin.math.abs(velocityY) > 300f
+                            val isIntentionalVerticalSwipe = distance > 120f
+
+                            if (hasMinimumVerticalDistance && (hasMinimumVerticalVelocity || isIntentionalVerticalSwipe)) {
+                                // Swipe down - open notification panel
+                                expandNotificationPanel(context)
+                                lastPageChangeTime = currentTime
+                                return@awaitEachGesture
                             }
-                            
-                            lastPageChangeTime = currentTime
+                        }
+
+                        // Handle horizontal swipes (page navigation)
+                        if (isHorizontalSwipe) {
+                            val hasMinimumDistance = kotlin.math.abs(deltaX) > 50f // Lower threshold like HorizontalPager
+                            val hasMinimumVelocity = kotlin.math.abs(velocityX) > 300f // Velocity threshold
+                            val isIntentionalSwipe = distance > 80f // Minimum total distance
+
+                            if (hasMinimumDistance && (hasMinimumVelocity || isIntentionalSwipe)) {
+                                val currentPage = homeScreenModel.currentPage
+
+                                if (deltaX > 0) {
+                                    // Swipe right - go to previous page
+                                    when (currentPage) {
+                                        2 -> homeScreenModel.goToPage(1) // Apps -> Home
+                                        1 -> homeScreenModel.goToPage(0) // Home -> Widgets
+                                        0 -> { /* Already at first page */ }
+                                    }
+                                } else {
+                                    // Swipe left - go to next page
+                                    when (currentPage) {
+                                        0 -> homeScreenModel.goToPage(1) // Widgets -> Home
+                                        1 -> homeScreenModel.goToPage(2) // Home -> Apps
+                                        2 -> { /* Already at last page */ }
+                                    }
+                                }
+
+                                lastPageChangeTime = currentTime
+                            }
                         }
                     }
                 }
@@ -522,9 +566,53 @@ fun HomeScreenPageManager(
     }
 
     // Custom Pager with GestureManager
+    val context = LocalContext.current
+    var isDragging by remember { mutableStateOf(false) }
+    var dragStartX by remember { mutableStateOf(0f) }
+    var dragStartY by remember { mutableStateOf(0f) }
+    var lastPageChangeTime by remember { mutableStateOf(0L) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        dragStartX = offset.x
+                        dragStartY = offset.y
+                        isDragging = true
+                    },
+                    onDragEnd = {
+                        isDragging = false
+                    },
+                    onDragCancel = {
+                        isDragging = false
+                    },
+                    onDrag = { change, _ ->
+                        val currentTime = System.currentTimeMillis()
+
+                        // Prevent rapid gestures
+                        if (currentTime - lastPageChangeTime < 300) {
+                            return@detectDragGestures
+                        }
+
+                        val deltaX = change.position.x - dragStartX
+                        val deltaY = change.position.y - dragStartY
+
+                        // Only handle vertical swipes down, let horizontal swipes pass through
+                        val isVerticalSwipe = kotlin.math.abs(deltaY) > kotlin.math.abs(deltaX)
+
+                        if (isVerticalSwipe && deltaY > 100f) {
+                            // Swipe down detected - open notification panel
+                            expandNotificationPanel(context)
+                            lastPageChangeTime = currentTime
+                            isDragging = false
+                            change.consume() // Consume the event to prevent further processing
+                        }
+                        // Don't consume horizontal swipes - let them pass through to CustomPager
+                    }
+                )
+            }
             .combinedClickable(
                 onClick = {}, onLongClickLabel = {}.toString(),
                 onLongClick = {
@@ -779,6 +867,28 @@ fun HomeScreenBottomSheet(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Expands the notification panel using reflection to access StatusBarManager
+ */
+private fun expandNotificationPanel(context: Context) {
+    try {
+        val statusBarService = context.getSystemService("statusbar")
+        val statusBarManager = Class.forName("android.app.StatusBarManager")
+        val expandMethod = statusBarManager.getMethod("expandNotificationsPanel")
+        expandMethod.invoke(statusBarService)
+    } catch (e: Exception) {
+        Log.e("HomeScreenPageManager", "Failed to expand notification panel", e)
+        // Fallback: Try to open notification settings if expansion fails
+        try {
+            val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(intent)
+        } catch (fallbackException: Exception) {
+            Log.e("HomeScreenPageManager", "Fallback also failed", fallbackException)
         }
     }
 }
