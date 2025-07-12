@@ -136,17 +136,22 @@ class MainHomeScreen : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Configure full screen immediately
-        enableEdgeToEdge()
-        configureFullScreenMode()
-
         // Set up the application content immediately for instant display
         setContent { SetUpContent() }
 
+        // Configure full screen after UI is set up
+        lifecycleScope.launch {
+            enableEdgeToEdge()
+            configureFullScreenMode()
+        }
 
+        // Set up receivers asynchronously
+        lifecycleScope.launch {
+            setupReceivers()
+        }
+    }
 
-
-
+    private suspend fun setupReceivers() {
         //Private space receiver
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             privateSpaceReceiver = PrivateSpaceStateReceiver { isUnlocked ->
@@ -168,8 +173,8 @@ class MainHomeScreen : FragmentActivity() {
                     Intent.ACTION_PACKAGE_REPLACED -> {
                         Log.i("INFO", "Package changed: ${intent.action}")
                         lifecycleScope.launch(Dispatchers.Default) {
-                            homeScreenModel.loadApps()
-                            homeScreenModel.reloadFavouriteApps()
+                            homeScreenModel.loadAppsAsync()
+                            homeScreenModel.reloadFavoritesAsync()
                         }
                     }
                 }
@@ -182,8 +187,6 @@ class MainHomeScreen : FragmentActivity() {
             addDataScheme("package")
         }
         registerReceiver(packageChangeReceiver, packageFilter)
-
-
     }
 
     override fun onResume() {

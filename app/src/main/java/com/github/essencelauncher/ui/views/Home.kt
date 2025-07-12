@@ -139,34 +139,45 @@ fun HomeScreen(
         ) {
         // Clock is now positioned separately at the top
 
-
-
-
-
         //Apps
-        items(homeScreenModel.favoriteApps) { app ->
-            HomeScreenItem(
-                appName = app.displayName,
-                onAppClick = {
-                    homeScreenModel.updateSelectedApp(app)
-
-                    AppUtils.openApp(
-                        app = app,
-                        mainAppModel = mainAppModel,
-                        homeScreenModel = homeScreenModel,
-                        activity = activity
+        if (homeScreenModel.isLoadingFavorites) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary
                     )
+                }
+            }
+        } else {
+            items(homeScreenModel.favoriteApps) { app ->
+                HomeScreenItem(
+                    appName = app.displayName,
+                    onAppClick = {
+                        homeScreenModel.updateSelectedApp(app)
 
-                    resetHome(homeScreenModel)
-                },
-                onAppLongClick = {
-                    homeScreenModel.showBottomSheet.value = true
-                    homeScreenModel.updateSelectedApp(app)
-                },
-                modifier = Modifier,
-                alignment = mainAppModel.itemAlignmentManager.getFavoriteAppsAlignmentAsHorizontal(),
-                isLocked = homeScreenModel.lockedApps.contains(app.packageName)
-            )
+                        AppUtils.openApp(
+                            app = app,
+                            mainAppModel = mainAppModel,
+                            homeScreenModel = homeScreenModel,
+                            activity = activity
+                        )
+
+                        resetHome(homeScreenModel)
+                    },
+                    onAppLongClick = {
+                        homeScreenModel.showBottomSheet.value = true
+                        homeScreenModel.updateSelectedApp(app)
+                    },
+                    modifier = Modifier,
+                    alignment = mainAppModel.itemAlignmentManager.getFavoriteAppsAlignmentAsHorizontal(),
+                    isLocked = homeScreenModel.lockedApps.contains(app.packageName)
+                )
+            }
         }
 
         //First time help

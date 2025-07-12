@@ -392,7 +392,7 @@ object AppUtils{
             homeScreenModel.searchExpanded.value = false
             homeScreenModel.searchText.value = ""
             homeScreenModel.showBottomSheet.value = false
-            homeScreenModel.reloadFavouriteApps()
+            homeScreenModel.reloadFavoritesAsync()
         }
     }
 
@@ -408,11 +408,6 @@ object AppUtils{
             SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
         return yesterdayDate
     }
-
-
-
-
-
 
 
     /**

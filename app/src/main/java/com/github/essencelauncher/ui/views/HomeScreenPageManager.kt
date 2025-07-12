@@ -92,6 +92,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Home Screen View Model
@@ -129,39 +131,100 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
         mutableStateOf(InstalledApp("", "", ComponentName("", ""))) //Only used for the bottom sheet
     var showPrivateBottomSheet = mutableStateOf(false)
 
-    init {
-        loadApps()
-        reloadFavouriteApps()
-        loadLockedApps()
-    }
+    // Loading states for better UX
+    var isLoadingApps by mutableStateOf(false)
+    var isLoadingFavorites by mutableStateOf(false)
 
-    fun loadApps() {
+    init {
+        // Load only essential data immediately
+        loadFavoritesAsync()
+        loadLockedAppsAsync()
+        
+        // Load apps in background after UI is ready
         coroutineScope.launch {
-            installedApps.clear()
-            installedApps.addAll(
-                AppUtils.getAllInstalledApps(mainAppViewModel.getContext()).sortedBy {
-                    it.displayName
-                })
+            delay(100) // Small delay to let UI render first
+            loadAppsAsync()
         }
     }
 
-    fun reloadFavouriteApps() {
-        coroutineScope.launch {
-            val maxFavoriteApps = getIntSetting(
-                mainAppViewModel.getContext(),
-                mainAppViewModel.getContext().getString(R.string.MaxFavoriteApps),
-                5
-            )
+    fun loadAppsAsync() {
+        if (isLoadingApps) return
+        
+        coroutineScope.launch(Dispatchers.IO) {
+            isLoadingApps = true
+            try {
+                val apps = AppUtils.getAllInstalledApps(mainAppViewModel.getContext())
+                    .sortedBy { it.displayName }
+                
+                withContext(Dispatchers.Main) {
+                    installedApps.clear()
+                    installedApps.addAll(apps)
+                    isLoadingApps = false
+                    
+                    // Reload favorites after apps are loaded
+                    reloadFavoritesAsync()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    isLoadingApps = false
+                }
+            }
+        }
+    }
 
-            val newFavoriteApps = mainAppViewModel.favoriteAppsManager.getFavoriteApps()
-                .take(maxFavoriteApps) // Limit to max favorite apps setting
-                .mapNotNull { packageName ->
+    fun loadFavoritesAsync() {
+        if (isLoadingFavorites) return
+        
+        coroutineScope.launch(Dispatchers.IO) {
+            isLoadingFavorites = true
+            try {
+                val maxFavoriteApps = getIntSetting(
+                    mainAppViewModel.getContext(),
+                    mainAppViewModel.getContext().getString(R.string.MaxFavoriteApps),
+                    5
+                )
+
+                val favoritePackageNames = mainAppViewModel.favoriteAppsManager.getFavoriteApps()
+                    .take(maxFavoriteApps)
+                
+                withContext(Dispatchers.Main) {
+                    favoriteApps.clear()
+                    // Add placeholder apps for immediate display
+                    favoritePackageNames.forEach { packageName ->
+                        favoriteApps.add(InstalledApp(packageName, packageName, ComponentName(packageName, "")))
+                    }
+                    isLoadingFavorites = false
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    isLoadingFavorites = false
+                }
+            }
+        }
+    }
+
+    fun reloadFavoritesAsync() {
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val maxFavoriteApps = getIntSetting(
+                    mainAppViewModel.getContext(),
+                    mainAppViewModel.getContext().getString(R.string.MaxFavoriteApps),
+                    5
+                )
+
+                val favoritePackageNames = mainAppViewModel.favoriteAppsManager.getFavoriteApps()
+                    .take(maxFavoriteApps)
+                
+                val newFavoriteApps = favoritePackageNames.mapNotNull { packageName ->
                     installedApps.find { it.packageName == packageName }
                 }
 
-            favoriteApps.apply {
-                clear()
-                addAll(newFavoriteApps)
+                withContext(Dispatchers.Main) {
+                    favoriteApps.clear()
+                    favoriteApps.addAll(newFavoriteApps)
+                }
+            } catch (e: Exception) {
+                // Handle error silently
             }
         }
     }
@@ -173,11 +236,17 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
         isCurrentAppLocked.value = mainAppViewModel.lockedAppsManager.isAppLocked(app.packageName)
     }
 
-    fun loadLockedApps() {
-        coroutineScope.launch {
-            val currentLockedApps = mainAppViewModel.lockedAppsManager.getLockedApps()
-            lockedApps.clear()
-            lockedApps.addAll(currentLockedApps)
+    fun loadLockedAppsAsync() {
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val currentLockedApps = mainAppViewModel.lockedAppsManager.getLockedApps()
+                withContext(Dispatchers.Main) {
+                    lockedApps.clear()
+                    lockedApps.addAll(currentLockedApps)
+                }
+            } catch (e: Exception) {
+                // Handle error silently
+            }
         }
     }
 
@@ -185,7 +254,7 @@ class HomeScreenModel(application: Application, private val mainAppViewModel: Ma
      * Update locked apps state for immediate UI updates
      */
     fun updateLockedApps() {
-        loadLockedApps()
+        loadLockedAppsAsync()
     }
 
     /**
@@ -516,7 +585,7 @@ fun HomeScreenPageManager(
                             homeScreenModel.showBottomSheet.value = false
                         }
                     }
-                    homeScreenModel.reloadFavouriteApps()
+                    homeScreenModel.reloadFavoritesAsync()
                 }
             ),
             AppAction(
