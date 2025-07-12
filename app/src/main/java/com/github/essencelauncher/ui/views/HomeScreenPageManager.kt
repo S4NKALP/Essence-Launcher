@@ -68,12 +68,13 @@ import com.github.essencelauncher.ui.theme.EssenceTheme
 import com.github.essencelauncher.ui.theme.offLightScheme
 import com.github.essencelauncher.utils.AppUtils
 import com.github.essencelauncher.utils.BiometricAuthenticationHelper
-
+import com.github.essencelauncher.services.DoubleTapLockAccessibilityService
 
 import com.github.essencelauncher.utils.AppUtils.resetHome
 import com.github.essencelauncher.utils.InstalledApp
 import com.github.essencelauncher.utils.getIntSetting
 import com.github.essencelauncher.utils.setBooleanSetting
+import com.github.essencelauncher.utils.getBooleanSetting
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.github.essencelauncher.MainAppViewModel as MainAppModel
@@ -614,7 +615,8 @@ fun HomeScreenPageManager(
                 )
             }
             .combinedClickable(
-                onClick = {}, onLongClickLabel = {}.toString(),
+                onClick = {},
+                onLongClickLabel = {}.toString(),
                 onLongClick = {
                     // Hide first time help when user holds the screen
                     setBooleanSetting(
@@ -623,6 +625,12 @@ fun HomeScreenPageManager(
                         false
                     )
                     onOpenSettings()
+                },
+                onDoubleClick = {
+                    // Double tap to lock screen if feature is enabled
+                    if (getBooleanSetting(mainAppModel.getContext(), mainAppModel.getContext().getString(R.string.DoubleTapLockScreen), false)) {
+                        DoubleTapLockAccessibilityService.lockScreenIfAvailable(mainAppModel.getContext())
+                    }
                 },
                 indication = null, interactionSource = homeScreenModel.interactionSource
             )

@@ -59,6 +59,7 @@
     <string name="show_status_bar">Show Status Bar</string>
     <string name="use_24_hour_format">24-Hour Format</string>
     <string name="max_favorite_apps">Max Favorite Apps</string>
+    <string name="DoubleTapLockScreen">DoubleTapLockScreen</string>
 
     <string name="personalization">Personalize</string>
     <string name="done">Done</string>
@@ -105,4 +106,14 @@
     <string name="authentication_error">Authentication error: %1$s</string>
     <string name="biometric_not_available">Biometric authentication not available</string>
     <string name="app_locked">App is locked</string>
+
+    <!-- Double Tap Lock Screen strings -->
+    <string name="double_tap_lock_screen">Double Tap to Lock Screen</string>
+    <string name="double_tap_lock_screen_description">Enable double tap anywhere to lock the screen</string>
+    <string name="accessibility_service_name">Essence Launcher Screen Lock</string>
+    <string name="accessibility_service_description">Minimal service that only provides screen locking capability for double tap feature. Does not read screen content or interfere with other apps.</string>
+    <string name="accessibility_permission_required">Accessibility Permission Required</string>
+    <string name="accessibility_permission_message">To enable double tap lock screen, please grant accessibility permission to Essence Launcher in the next screen.</string>
+    <string name="open_accessibility_settings">Open Accessibility Settings</string>
+    <string name="accessibility_service_disabled">Accessibility service disabled. Double tap lock screen feature turned off.</string>
 </resources>

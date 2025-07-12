@@ -72,6 +72,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
@@ -100,7 +101,7 @@ import com.github.essencelauncher.utils.AppUtils.loadTextFromAssets
 import com.github.essencelauncher.utils.BiometricAuthenticationHelper
 import com.github.essencelauncher.utils.changeAppsAlignment
 import com.github.essencelauncher.utils.managers.ItemAlignmentManager
-
+import com.github.essencelauncher.utils.AccessibilityServiceManager
 
 import com.github.essencelauncher.utils.getAppsAlignmentAsInt
 import com.github.essencelauncher.utils.getBooleanSetting
@@ -564,6 +565,55 @@ fun PersonalizationOptions(
                 // Refresh the status bar visibility immediately
                 activity?.refreshStatusBarVisibility()
             })
+
+        // Get the setting key outside of remember block
+        val doubleTapSettingKey = stringResource(R.string.DoubleTapLockScreen)
+
+        // State for double tap lock screen toggle
+        val isDoubleTapEnabled = remember {
+            mutableStateOf(
+                getBooleanSetting(mainAppModel.getContext(), doubleTapSettingKey, false) &&
+                AccessibilityServiceManager.isAccessibilityServiceEnabled(mainAppModel.getContext())
+            )
+        }
+
+        // Update state when composition recomposes (e.g., when user returns from accessibility settings)
+        LaunchedEffect(Unit) {
+            isDoubleTapEnabled.value = getBooleanSetting(mainAppModel.getContext(), doubleTapSettingKey, false) &&
+                    AccessibilityServiceManager.isAccessibilityServiceEnabled(mainAppModel.getContext())
+        }
+
+        SettingsSwitch(
+            label = stringResource(id = R.string.double_tap_lock_screen),
+            checked = isDoubleTapEnabled.value,
+            onCheckedChange = { enabled ->
+                if (enabled) {
+                    // Always redirect to accessibility settings when enabling
+                    AccessibilityServiceManager.openAccessibilitySettings(mainAppModel.getContext())
+                    // Set the setting to true - it will be checked when user returns
+                    setBooleanSetting(
+                        mainAppModel.getContext(),
+                        doubleTapSettingKey,
+                        true
+                    )
+                } else {
+                    // Disable the setting
+                    setBooleanSetting(
+                        mainAppModel.getContext(),
+                        doubleTapSettingKey,
+                        false
+                    )
+                    isDoubleTapEnabled.value = false
+                }
+            })
+
+        // Description text for double tap lock screen
+        Text(
+            text = stringResource(id = R.string.double_tap_lock_screen_description),
+            modifier = Modifier.padding(start = 0.dp, top = 4.dp, bottom = 8.dp),
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+            style = MaterialTheme.typography.bodySmall
+        )
 
         SettingsNavigationItem(
             label = stringResource(id = R.string.theme),

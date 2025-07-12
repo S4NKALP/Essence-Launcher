@@ -76,6 +76,8 @@ import com.github.essencelauncher.utils.managers.FavoriteAppsManager
 import com.github.essencelauncher.utils.managers.HiddenAppsManager
 import com.github.essencelauncher.utils.managers.ItemAlignmentManager
 import com.github.essencelauncher.utils.managers.LockedAppsManager
+import com.github.essencelauncher.utils.AccessibilityServiceManager
+import com.github.essencelauncher.utils.setBooleanSetting
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -195,12 +197,29 @@ class MainHomeScreen : FragmentActivity() {
         // Refresh status bar appearance in case system theme changed
         configureStatusBarAppearance()
 
+        // Check accessibility service status for double tap lock screen
+        checkAccessibilityServiceStatus()
+
         // Reset home
         try {
             AppUtils.resetHome(homeScreenModel, viewModel.shouldGoHomeOnResume.value)
             viewModel.shouldGoHomeOnResume.value = false
         } catch (ex: Exception) {
             Log.e("ERROR", ex.toString())
+        }
+    }
+
+    /**
+     * Check accessibility service status and update settings accordingly
+     */
+    private fun checkAccessibilityServiceStatus() {
+        val doubleTapEnabled = getBooleanSetting(this, getString(R.string.DoubleTapLockScreen), false)
+        val serviceEnabled = AccessibilityServiceManager.isAccessibilityServiceEnabled(this)
+
+        // If double tap is enabled in settings but service is not enabled, disable the setting
+        if (doubleTapEnabled && !serviceEnabled) {
+            setBooleanSetting(this, getString(R.string.DoubleTapLockScreen), false)
+            Log.d("MainHomeScreen", "Double tap lock screen disabled - accessibility service not enabled")
         }
     }
 
